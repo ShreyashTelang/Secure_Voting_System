@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Viva Voce Preparation Guide | CIS Practical Exam{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h1>📝 Viva Voce Preparation Guide</h1>
+    <p style="color: var(--text-secondary);">
+        Technically accurate, concise answers for the CIS Practical Examination and External Viva.
+        Click any question to view its detailed answer.
+    </p>
+</div>
+
+<!-- Category 1: RSA Asymmetric Cryptography -->
+<div style="margin-bottom: 30px;">
+    <h2 style="color: var(--accent-blue); margin-bottom: 14px;">1. RSA Cryptography Viva Questions</h2>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q1. What is RSA?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> RSA (named after Ron Rivest, Adi Shamir, and Leonard Adleman) is an <em>asymmetric public-key cryptographic algorithm</em>. It relies on the mathematical difficulty of factoring the product of two large prime numbers (the integer factorization problem).
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q2. Why is RSA called an asymmetric algorithm?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> It is asymmetric because it uses a <strong>mathematically linked pair of different keys</strong>: a <em>Public Key (e, n)</em> used for encryption, and a distinct <em>Private Key (d, n)</em> used for decryption. Knowledge of the public key does not easily reveal the private key.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q3. What is a public key in RSA?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> The public key consists of the pair <code>(e, n)</code>, where <code>n</code> is the modulus (<code>n = p × q</code>) and <code>e</code> is the public exponent. It is freely distributed to all voters so they can encrypt their ballots.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q4. What is a private key in RSA?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> The private key consists of <code>(d, n)</code>, where <code>d</code> is the private exponent calculated as the modular multiplicative inverse of <code>e mod φ(n)</code>. It must be kept strictly secret on the election server to decrypt ballots.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q5. What is Euler's totient function φ(n)?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> Euler's totient φ(n) counts the number of positive integers strictly less than <code>n</code> that are coprime (relatively prime) to <code>n</code>. For prime numbers <code>p</code> and <code>q</code>, <code>φ(n) = (p - 1)(q - 1)</code>. It is essential because by Euler's theorem, <code>M^φ(n) ≡ 1 (mod n)</code>, which allows calculating private exponent <code>d</code>.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q6. What is the RSA key generation process?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong>
+            1. Select two distinct prime numbers <code>p</code> and <code>q</code>.<br>
+            2. Compute modulus <code>n = p × q</code>.<br>
+            3. Compute totient <code>φ(n) = (p - 1)(q - 1)</code>.<br>
+            4. Select public exponent <code>e</code> such that <code>1 &lt; e &lt; φ(n)</code> and <code>gcd(e, φ(n)) = 1</code>.<br>
+            5. Calculate private exponent <code>d ≡ e⁻¹ mod φ(n)</code> using the Extended Euclidean Algorithm (<code>d × e ≡ 1 mod φ(n)</code>).<br>
+            6. Public key is <code>(e, n)</code>; Private key is <code>(d, n)</code>.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q7. What is the RSA encryption formula?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> <code>C = M^e mod n</code>, where <code>M</code> is the plaintext integer (such that <code>0 ≤ M &lt; n</code>), <code>e</code> is the public exponent, and <code>C</code> is the resulting ciphertext integer.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q8. What is the RSA decryption formula?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> <code>M = C^d mod n</code>, where <code>C</code> is the ciphertext integer, <code>d</code> is the private exponent, and <code>M</code> is the recovered plaintext integer.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q9. Why does RSA rely on prime numbers?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> Multiplying two large prime numbers <code>p × q = n</code> is computationally easy (polynomial time), but finding <code>p</code> and <code>q</code> given only <code>n</code> is computationally intractable (sub-exponential time). Without knowing <code>p</code> and <code>q</code>, an attacker cannot compute <code>φ(n)</code> and therefore cannot deduce private exponent <code>d</code>.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q10. Why is RSA not suitable for encrypting large amounts of data?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> RSA modular exponentiation of very large integers (e.g. 2048-bit numbers) is computationally expensive, requiring extensive CPU arithmetic. Furthermore, RSA can only encrypt messages smaller than its modulus <code>n</code>. In real applications, a <strong>hybrid cryptosystem</strong> is used: RSA encrypts a small symmetric session key (e.g. AES), and AES encrypts the bulk data.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q11. What is the difference between RSA Encryption and RSA Digital Signatures?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> In RSA <em>Encryption</em>, anyone uses the receiver's Public Key to encrypt (<code>C = M^e mod n</code>), and only the receiver uses their Private Key to decrypt (<code>M = C^d mod n</code>) for <strong>Confidentiality</strong>. In RSA <em>Digital Signatures</em>, the sender uses their Private Key to sign the hash (<code>S = H(M)^d mod n</code>), and anyone uses the sender's Public Key to verify (<code>H(M) = S^e mod n</code>) for <strong>Authentication & Non-repudiation</strong>.
+        </div>
+    </div>
+</div>
+
+<!-- Category 2: HMAC-SHA256 Authentication -->
+<div style="margin-bottom: 30px;">
+    <h2 style="color: var(--accent-cyan); margin-bottom: 14px;">2. HMAC-SHA256 Authentication Viva Questions</h2>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q12. What is HMAC?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> HMAC stands for <em>Hash-based Message Authentication Code</em> (RFC 2104). It is a cryptographic mechanism that uses a cryptographic hash function in combination with a secret shared key to verify both data <strong>Integrity</strong> and data <strong>Authenticity</strong>.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q13. What does HMAC-SHA256 mean?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> It means an HMAC construction using <strong>SHA-256</strong> as the underlying cryptographic hash function, outputting a 256-bit (32-byte / 64-hexadecimal character) authentication tag.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q14. What is SHA-256?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> SHA-256 is a member of the SHA-2 family designed by the NSA. It is a cryptographic one-way hash function that takes an arbitrary-length message and produces a fixed-size 256-bit digest with strong collision resistance and preimage resistance.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q15. Is SHA-256 an encryption algorithm?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> <strong>NO!</strong> SHA-256 is a one-way mathematical hash function, not encryption. Encryption is a two-way operation that can be reversed with a decryption key. A hash function cannot be decrypted because information is compressed irreversibly.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q16. Is HMAC an encryption algorithm?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> <strong>NO!</strong> HMAC is a message authentication code, not an encryption cipher. The message remains unencrypted unless an encryption algorithm (like RSA) is also applied. HMAC provides integrity and authenticity, but zero confidentiality.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q17. Why is a secret key required in HMAC?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> Without a secret key, an attacker modifying a message could simply recalculate a standard hash (e.g. SHA256(tampered_msg)) and replace it. With HMAC, calculating the correct tag requires possession of the secret key <code>K</code>, which the attacker does not have.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q18. What happens if the message changes by even a single character?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> Due to the <strong>avalanche effect</strong> of SHA-256, changing even a single bit in the message changes approximately 50% of the bits in the resulting hash digest. The newly calculated HMAC will completely diverge from the original tag, causing immediate verification failure.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q19. Why not simply use SHA256(key + message) instead of HMAC?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> The naive construction <code>H(key || message)</code> is vulnerable to <strong>Length Extension Attacks</strong> in Merkle-Damgård hash functions like SHA-256. An attacker can append data to the message and forge a valid hash without knowing the secret key. HMAC prevents this by using inner and outer padding (<code>ipad = 0x36</code> and <code>opad = 0x5C</code>).
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q20. Does HMAC provide confidentiality?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> <strong>NO.</strong> HMAC does not conceal or encrypt the data. Anyone intercepting the payload can read it if it is not encrypted. This is precisely why our project combines HMAC with RSA!
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q21. What is the difference between HMAC and a Digital Signature?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> HMAC is a <strong>symmetric</strong> mechanism: both sender and receiver share the same secret key <code>K</code>. Any party with <code>K</code> can generate or verify the tag (no non-repudiation between parties sharing <code>K</code>). A Digital Signature is <strong>asymmetric</strong>: the sender signs using their private key, and anyone can verify using the sender's public key, providing true non-repudiation to third parties.
+        </div>
+    </div>
+</div>
+
+<!-- Category 3: Project Architecture & Integration -->
+<div style="margin-bottom: 30px;">
+    <h2 style="color: var(--accent-purple); margin-bottom: 14px;">3. Project Architecture & Integration Viva Questions</h2>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q22. Why did you choose RSA for this project?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> RSA was selected to provide <strong>Confidentiality</strong> via asymmetric public key cryptography. Voters can encrypt their ballots using the publicly available server key <code>(e, n)</code> without needing to share or reveal the private key <code>(d, n)</code>.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q23. Why did you choose HMAC-SHA256 for this project?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> HMAC-SHA256 was selected to provide <strong>Integrity</strong> and <strong>Authentication</strong>. It guarantees that the vote request was not modified in transit by an adversary and verifies that the submission came from an authorized voter possessing the secret key.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q24. Why do you need BOTH RSA and HMAC-SHA256?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> Because each algorithm solves a different security requirement:
+            • <em>RSA alone</em> protects confidentiality, but an active attacker on the network could tamper with the ciphertext bits or inject forged ballots without detection.<br>
+            • <em>HMAC alone</em> detects tampering, but does not encrypt the ballot (plaintext would be exposed).<br>
+            <strong>Combined:</strong> RSA hides the vote, while HMAC detects tampering and authenticates the voter.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q25. How does your system detect vote tampering?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> The client submits <code>(Encrypted_Vote, HMAC_Tag, Voter_ID, Timestamp)</code>. The server independently recomputes <code>Calculated_HMAC = HMAC(Voter_Secret, Canonical_Payload)</code>. If an attacker modified the payload in transit, the calculated HMAC will not match the received tag. The server calls <code>hmac.compare_digest()</code>, detects the mismatch, logs a security alarm, and rejects the vote immediately without decrypting it.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q26. What happens if an attacker changes Candidate A to Candidate B?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> If an active attacker flips the candidate payload, the server recomputes the HMAC over the tampered payload. Because the attacker lacks the voter's secret key, they cannot forge the matching HMAC. The server detects that <code>Received_HMAC ≠ Calculated_HMAC</code> and returns an HTTP 400 <code>TAMPERING_DETECTED</code> alert.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q27. How does the project provide Confidentiality, Integrity, and Authentication?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong>
+            • <strong>Confidentiality:</strong> RSA public key encryption (<code>C = M^e mod n</code>) ensures only the election authority with private key <code>d</code> can read the ballot.<br>
+            • <strong>Integrity:</strong> HMAC-SHA256 verifies that not a single bit was changed in transit.<br>
+            • <strong>Authentication:</strong> Possession of the voter's unique HMAC shared secret proves the voter's identity.<br>
+            • <strong>Password Protection:</strong> Login passwords are protected using salted SHA-256 password hashing.
+        </div>
+    </div>
+
+    <div class="viva-box">
+        <div class="viva-header"><span>Q28. What are the limitations of this educational system?</span><span class="viva-toggle-icon">▼</span></div>
+        <div class="viva-answer" style="display: none;">
+            <strong>Answer:</strong> As an educational prototype for CIS viva evaluation, it uses small primes for visible math and SQLite storage. Real-world elections additionally require: homomorphic encryption for anonymous tallying, Hardware Security Modules (HSMs) for private keys, PKI certificates, coercion resistance, and End-to-End Verifiability (E2E-V).
+        </div>
+    </div>
+</div>
+{% endblock %}

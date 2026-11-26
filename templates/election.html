@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Election | {{ election.title }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 28px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <span class="status-pill success" style="margin-bottom: 8px;">● Election {{ election.status }}</span>
+      <h1>{{ election.title }}</h1>
+      <p class="subtitle" style="margin-bottom: 0;">
+        {{ election.description }} Select one candidate below and proceed to cryptographic review.
+      </p>
+    </div>
+
+    <!-- Voter Status Pill -->
+    <div>
+      {% if not is_authenticated %}
+        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--bg-subtle);">
+          <span style="font-size: 0.88rem; color: var(--text-muted);">
+            Sign in to vote: <a href="{{ url_for('login') }}" style="font-weight: 600;">Sign In &rarr;</a>
+          </span>
+        </div>
+      {% elif voter_has_voted %}
+        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--status-success-bg); border-color: var(--status-success-border);">
+          <span class="status-pill success" style="margin-bottom: 4px;">✓ Ballot Recorded</span>
+          <div style="font-size: 0.82rem; color: #166534;">Your ballot is securely stored in the ledger.</div>
+        </div>
+      {% else %}
+        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--accent-blue-subtle); border-color: #bfdbfe;">
+          <span class="status-pill neutral" style="margin-bottom: 4px;">Eligible to Vote</span>
+          <div style="font-size: 0.82rem; color: #1e40af;">Single-vote token active: {{ current_voter.voter_id }}</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Candidate Selection Grid -->
+<div class="grid-2" style="margin-bottom: 30px;">
+  {% for cand in candidates %}
+    <div class="candidate-selection-card" data-candidate-id="{{ cand.id }}" data-candidate-name="{{ cand.name }}">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+          <h3 style="font-size: 1.2rem;">{{ cand.name }}</h3>
+          <span class="status-pill neutral">#{{ cand.id }}</span>
+        </div>
+        <div style="font-size: 0.85rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 12px;">
+          {{ cand.position }} &bull; {{ cand.affiliation }}
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+          {{ cand.manifesto }}
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border-light);">
+        <span style="font-size: 0.82rem; color: var(--text-dim);">Click card to select</span>
+        <button type="button" class="btn btn-secondary btn-sm" style="pointer-events: none;">
+          Select Candidate
+        </button>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Bottom Review Action Bar -->
+<div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <div style="font-weight: 600; color: var(--text-main);">Selected Candidate</div>
+    <div style="font-size: 0.88rem; color: var(--text-muted);">
+      Click any candidate above to review the cryptographic ballot.
+    </div>
+  </div>
+
+  <div>
+    {% if not is_authenticated %}
+      <a href="{{ url_for('login') }}" class="btn btn-primary">Sign in to Vote &rarr;</a>
+    {% elif voter_has_voted %}
+      <a href="{{ url_for('results_view') }}" class="btn btn-secondary">View Election Results &rarr;</a>
+    {% else %}
+      <a id="btnReviewSelection" href="#" class="btn btn-primary disabled" aria-disabled="true">
+        Review Selected Candidate &rarr;
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

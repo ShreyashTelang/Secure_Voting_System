@@ -1,0 +1,99 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Duplicate Vote Prevention Audit | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+    Eligibility & Single-Vote Audit
+  </div>
+  <h1>Duplicate Checks</h1>
+  <p class="subtitle">
+    Audit of single-vote constraints, state-machine transitions, and duplicate ballot interception logs.
+  </p>
+</div>
+
+<!-- Summary Card -->
+<div class="grid-3" style="margin-bottom: 24px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Duplicate Attempts Blocked</div>
+    <div class="metric-value-lg" style="color: {% if data.total_attempts > 0 %}var(--status-warning){% else %}var(--status-success){% endif %};">
+      {{ data.total_attempts }}
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Interceptions recorded</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Enforcement Mechanism</div>
+    <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin-top: 10px;">
+      State Flag + DB Constraint
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">Atomic single-vote check</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Service Impact</div>
+    <div style="font-size: 1.1rem; font-weight: 700; color: var(--status-success); margin-top: 10px;">
+      Zero Disruption (Resilient)
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 4px;">Rejected cleanly with HTTP 400</div>
+  </div>
+</div>
+
+<!-- Prevention Mechanism Card -->
+<div class="card" style="border-left: 4px solid var(--accent-blue);">
+  <div class="card-header">
+    <h3>Single-Vote Security Guarantee</h3>
+    <span class="status-pill success">Strictly Enforced</span>
+  </div>
+  <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin: 0;">
+    {{ data.prevention_mechanism }}
+  </p>
+</div>
+
+<!-- Duplicate Attempts Log Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Blocked Duplicate Vote Attempts</h3>
+      <div style="font-size: 0.82rem; color: var(--text-dim);">Audit log entries of duplicate submission attempts</div>
+    </div>
+    <span class="status-pill {% if data.total_attempts == 0 %}success{% else %}warning{% endif %}">
+      {{ data.total_attempts }} Total Attempts
+    </span>
+  </div>
+
+  {% if data.duplicate_logs %}
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor ID</th>
+            <th>Reference ID</th>
+            <th>Description</th>
+            <th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in data.duplicate_logs %}
+            <tr>
+              <td style="font-size: 0.82rem; color: var(--text-dim);">{{ l.timestamp }}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.82rem;">{{ l.actor_id }}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.82rem;">{{ l.request_reference or '—' }}</td>
+              <td style="font-size: 0.82rem; color: var(--text-muted);">{{ l.description }}</td>
+              <td>
+                <span class="status-pill danger" style="font-size: 0.72rem;">BLOCKED & LOGGED</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="padding: 28px; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+      &check; No duplicate vote attempts recorded in this election session.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Results Verification | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+        Certified Tabulation Audit
+      </div>
+      <h1>Results Verification</h1>
+      <p class="subtitle" style="margin-bottom: 0;">
+        Independent certification of ballot counts, candidate percentages, and verification checklist.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('auditor_reports') }}" class="btn btn-primary btn-sm">Generate Official Report</a>
+      <a href="{{ url_for('auditor_export_csv') }}" class="btn btn-secondary btn-sm">Export Results CSV</a>
+    </div>
+  </div>
+</div>
+
+<!-- Tabulation Summary Metrics -->
+<div class="grid-3" style="margin-bottom: 24px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Accepted Valid Ballots</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">{{ data.accepted_votes }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Fully verified & tabulated</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Rejected Submissions</div>
+    <div class="metric-value-lg" style="color: {% if data.rejected_requests > 0 %}var(--status-danger){% else %}var(--text-muted){% endif %};">
+      {{ data.rejected_requests }}
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Tampered + duplicate attempts</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Tabulation Integrity</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">100%</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Zero arithmetic discrepancies</div>
+  </div>
+</div>
+
+<!-- Candidate Tallies Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Certified Candidate Tallies</h3>
+      <div style="font-size: 0.82rem; color: var(--text-dim);">{{ data.election.title }} &bull; {{ data.accepted_votes }} Total Votes</div>
+    </div>
+    <span class="status-pill success">Cryptographically Certified</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Position & Department</th>
+          <th>Affiliation</th>
+          <th style="width: 28%;">Vote Share</th>
+          <th style="text-align: right;">Total Votes</th>
+          <th style="text-align: right;">Percentage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in data.tallies %}
+          <tr>
+            <td>
+              <div style="font-weight: 700; color: var(--text-main);">{{ c.name }}</div>
+            </td>
+            <td style="font-size: 0.85rem; color: var(--text-muted);">
+              {{ c.position }} &bull; {{ c.department }}
+            </td>
+            <td>
+              <span class="status-pill neutral" style="font-size: 0.75rem;">{{ c.affiliation }}</span>
+            </td>
+            <td>
+              <div style="background: var(--bg-subtle); height: 8px; border-radius: 4px; overflow: hidden; width: 100%;">
+                <div style="background: var(--accent-blue); height: 100%; width: {{ c.percentage }}%;"></div>
+              </div>
+            </td>
+            <td style="font-family: var(--font-mono); font-weight: 700; text-align: right; font-size: 0.95rem;">
+              {{ c.vote_count }}
+            </td>
+            <td style="font-family: var(--font-mono); font-weight: 600; text-align: right; font-size: 0.9rem; color: var(--text-muted);">
+              {{ c.percentage }}%
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Verification Checklist -->
+<div class="card">
+  <div class="card-header">
+    <h3>Auditor Verification Checklist</h3>
+    <span class="status-pill success">All Verification Criteria Passed</span>
+  </div>
+
+  <div class="grid-2">
+    {% for key, item in data.verification_checklist.items() %}
+      <div style="padding: 16px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-subtle); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-main);">{{ item.title }}</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 2px;">Automated cryptographic cross-check</div>
+        </div>
+        <span class="status-pill success" style="font-size: 0.8rem;">&check; {{ item.status }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

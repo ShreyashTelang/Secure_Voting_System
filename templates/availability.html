@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}System Availability | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <span class="status-pill success" style="margin-bottom: 8px;">● Continuous Service Reliability</span>
+  <h1>System Availability & Resilience</h1>
+  <p class="subtitle" style="margin-bottom: 0;">
+    Operational monitoring, fault isolation, duplicate-vote prevention, and graceful error handling.
+  </p>
+</div>
+
+<!-- Security Sub-Navigation -->
+<div class="sub-nav">
+  <a href="{{ url_for('security_overview') }}" class="sub-nav-item">Overview (CIA Triad)</a>
+  <a href="{{ url_for('security_rsa') }}" class="sub-nav-item">RSA Cryptography</a>
+  <a href="{{ url_for('security_hmac') }}" class="sub-nav-item">HMAC-SHA256</a>
+  <a href="{{ url_for('security_integrity_demo') }}" class="sub-nav-item">Tampering Simulation</a>
+  <a href="{{ url_for('security_availability') }}" class="sub-nav-item active">System Availability</a>
+</div>
+
+<!-- Section 1: Real-Time Operational Status Matrix -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">Service Health Status</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Active components supporting uninterrupted voting operations
+      </div>
+    </div>
+    <span class="status-pill success">All Systems Operational</span>
+  </div>
+
+  <div class="grid-2">
+    {% for s in status.services %}
+      <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0;">{{ s.name }}</h4>
+          <span class="status-pill {% if s.is_healthy %}success{% else %}danger{% endif %}">
+            ● {{ s.status }}
+          </span>
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
+          {{ s.description }}
+        </p>
+        {% if s.latency %}
+          <div style="font-size: 0.82rem; color: var(--text-dim);">
+            Active Response Latency: <span class="code-inline">{{ s.latency }}</span>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Section 2: Availability Demonstrations in SecureVote -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">Demonstrated Availability Protections</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        How the system maintains availability under adversarial or erroneous conditions
+      </div>
+    </div>
+    <span class="status-pill neutral">Fault Tolerance</span>
+  </div>
+
+  <div class="grid-3">
+    <!-- 1. Duplicate Voting Prevention -->
+    <div style="border: 1px solid var(--border-light); padding: 18px; border-radius: var(--radius-md); background: #ffffff;">
+      <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 6px;">
+        1. Duplicate Voting Prevention
+      </h4>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
+        If a voter attempts to submit a second ballot:
+      </p>
+      <div class="code-block" style="font-size: 0.8rem; margin: 0; background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-light);">
+        Vote already recorded. You cannot submit another vote.
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 8px;">
+        The system returns a structured HTTP 400 rejection and remains 100% operational rather than crashing.
+      </p>
+    </div>
+
+    <!-- 2. Malformed Request Handling -->
+    <div style="border: 1px solid var(--border-light); padding: 18px; border-radius: var(--radius-md); background: #ffffff;">
+      <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 6px;">
+        2. Malformed Request Handling
+      </h4>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
+        If invalid parameters or corrupt JSON are received:
+      </p>
+      <div class="code-block" style="font-size: 0.8rem; margin: 0; background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-light);">
+        Request rejected safely. Voting service remains operational.
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 8px;">
+        Input validation filters bad packets before they reach cryptographic or storage routines.
+      </p>
+    </div>
+
+    <!-- 3. Safe Failure Handling -->
+    <div style="border: 1px solid var(--border-light); padding: 18px; border-radius: var(--radius-md); background: #ffffff;">
+      <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 6px;">
+        3. Exception & Failure Isolation
+      </h4>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px;">
+        Unexpected errors are handled cleanly:
+      </p>
+      <div class="code-block" style="font-size: 0.8rem; margin: 0; background: var(--bg-subtle); color: var(--text-main); border: 1px solid var(--border-light);">
+        Internal state isolated. Stack traces are never exposed.
+      </div>
+      <p style="font-size: 0.82rem; color: var(--text-dim); margin-top: 8px;">
+        ACID transactional rollbacks prevent partial database writes and preserve ledger consistency.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Essential Theoretical Note -->
+<div class="card" style="border-left: 4px solid #0f172a; background: var(--bg-surface);">
+  <h3 style="margin-bottom: 6px;">Key Architectural Principle</h3>
+  <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+    <strong>Availability is supported by reliable application design, schema validation, duplicate-voting prevention, and resilient error recovery—not by RSA or HMAC themselves.</strong>
+    Neither asymmetric encryption nor cryptographic hash functions ensure that a server remains online or that duplicate ballots are rejected; those guarantees are provided by the application architecture and database constraints.
+  </p>
+</div>
+{% endblock %}

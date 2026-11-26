@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}SecureVote | Secure Electronic Voting System{% endblock %}
+
+{% block content %}
+<div style="padding: 40px 0 20px 0; max-width: 840px;">
+  <span class="status-pill neutral" style="margin-bottom: 14px;">
+    Electronic Voting Security &bull; RSA &bull; HMAC-SHA256
+  </span>
+  <h1 style="font-size: 2.6rem; margin-bottom: 16px;">
+    Secure electronic voting powered by modern cryptography.
+  </h1>
+  <p class="subtitle" style="font-size: 1.15rem; line-height: 1.6; margin-bottom: 28px;">
+    SecureVote ensures end-to-end election security through mathematical cryptographic separation: 
+    <strong>RSA public-key cryptography</strong> protects ballot confidentiality, 
+    <strong>HMAC-SHA256</strong> validates ballot integrity and authenticates voters, and 
+    <strong>fault-tolerant service architecture</strong> ensures continuous availability.
+  </p>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="{{ url_for('election_view') }}" class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;">
+      Enter Election →
+    </a>
+    <a href="{{ url_for('security_overview') }}" class="btn btn-secondary" style="padding: 12px 24px; font-size: 1rem;">
+      Explore Security Center
+    </a>
+  </div>
+</div>
+
+<!-- Active Election Status Banner -->
+<div class="card" style="margin-top: 36px; border-left: 4px solid var(--accent-blue);">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dim); font-weight: 600; letter-spacing: 0.04em;">
+        Active Public Election
+      </div>
+      <h2 style="font-size: 1.35rem; margin-top: 2px;">{{ election.title }}</h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 4px;">
+        {{ election.description }} &bull; {{ election.candidate_count }} Registered Candidates
+      </p>
+    </div>
+    <div style="text-align: right;">
+      <span class="status-pill success" style="font-size: 0.88rem; padding: 4px 12px;">
+        ● Election {{ election.status }}
+      </span>
+      <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 6px;">
+        Total Ballots Cast: <strong>{{ election.total_votes_cast }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3 Pillars: Confidentiality, Integrity, Availability -->
+<div style="margin-top: 40px;">
+  <h2>Cryptographic Security Framework</h2>
+  <p class="subtitle" style="margin-bottom: 24px;">
+    How the three foundational cybersecurity goals are met in SecureVote.
+  </p>
+
+  <div class="grid-3">
+    <!-- Pillar 1: Confidentiality -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">Confidentiality</span>
+          <span class="status-pill success">Protected</span>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+          RSA Public-Key Cryptography
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+          Ballot selections are transformed into ciphertext integers via modular exponentiation 
+          (<span class="code-inline">C = M^e mod n</span>) using the election authority's public key. 
+          Network eavesdroppers cannot discern voter choices without the private exponent <span class="code-inline">d</span>.
+        </p>
+      </div>
+      <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border-light); font-size: 0.84rem;">
+        <a href="{{ url_for('security_rsa') }}">Inspect RSA Mathematics &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Pillar 2: Integrity -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">Integrity & Authentication</span>
+          <span class="status-pill success">Verified</span>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+          HMAC-SHA256 (RFC 2104)
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+          Every submission is authenticated using a 256-bit keyed hash computed over the encrypted payload and voter metadata. 
+          Any modification in transit creates an immediate tag mismatch and triggers safe rejection.
+        </p>
+      </div>
+      <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border-light); font-size: 0.84rem;">
+        <a href="{{ url_for('security_hmac') }}">Inspect HMAC Authentication &rarr;</a>
+      </div>
+    </div>
+
+    <!-- Pillar 3: Availability -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+          <span style="font-weight: 700; font-size: 1.05rem; color: var(--text-main);">Availability</span>
+          <span class="status-pill success">Operational</span>
+        </div>
+        <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+          Resilient System Architecture
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
+          Availability is supported by application design, schema validation, duplicate-voting prevention, 
+          and graceful error handling. If a voter attempts to vote twice or transmits malformed data, 
+          the service rejects the request safely without crashing.
+        </p>
+      </div>
+      <div style="margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border-light); font-size: 0.84rem;">
+        <a href="{{ url_for('security_availability') }}">Inspect Availability Status &rarr;</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

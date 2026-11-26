@@ -1,0 +1,856 @@
+{% extends "base.html" %}
+
+{% block title %}Integrity Sandbox | SecureVote{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
+    <span class="status-pill neutral" style="font-weight: 600; letter-spacing: 0.04em;">DEMONSTRATION MODE</span>
+    <span style="font-size: 0.82rem; color: var(--storm-steel);">RFC 2104 / FIPS 198-1 Compliant</span>
+  </div>
+  <h1 style="color: var(--storm-dark); margin-bottom: 4px;">Integrity Sandbox</h1>
+  <p class="subtitle" style="font-size: 1.05rem; color: var(--storm-steel); margin-bottom: 0;">
+    See how HMAC-SHA256 detects a modified voting request.
+  </p>
+</div>
+
+<!-- Security Sub-Navigation -->
+<div class="sub-nav" style="margin-bottom: 24px;">
+  <a href="{{ url_for('security_overview') }}" class="sub-nav-item">Overview (CIA Triad)</a>
+  <a href="{{ url_for('security_rsa') }}" class="sub-nav-item">RSA Cryptography</a>
+  <a href="{{ url_for('security_hmac') }}" class="sub-nav-item">HMAC-SHA256</a>
+  <a href="{{ url_for('security_integrity_demo') }}" class="sub-nav-item active">Integrity Sandbox</a>
+  <a href="{{ url_for('security_availability') }}" class="sub-nav-item">System Availability</a>
+</div>
+
+<!-- Educational Explanation Banner -->
+<div class="card" style="border-left: 4px solid var(--storm-accent); background: #ffffff; margin-bottom: 24px; padding: 18px 22px;">
+  <div style="font-weight: 600; color: var(--storm-dark); font-size: 0.98rem; margin-bottom: 6px;">
+    Cryptographic Integrity Principle
+  </div>
+  <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.55; margin: 0;">
+    This sandbox demonstrates how a voting request becomes invalid when its contents are modified without generating a new valid HMAC authentication tag. Because the attacker lacks the shared secret key, any in-transit modification causes the server's recalculated HMAC to differ from the received authentication tag.
+  </p>
+</div>
+
+<!-- Interactive Simulation Controls Bar -->
+<div class="card" style="margin-bottom: 28px; background: #ffffff;">
+  <div class="card-header" style="padding-bottom: 14px; border-bottom: 1px solid var(--border-light);">
+    <div>
+      <h3 style="color: var(--storm-dark); margin-bottom: 2px;">Simulation Controls</h3>
+      <div style="font-size: 0.85rem; color: var(--storm-steel);">
+        Configure candidate selection and test authentication verification paths
+      </div>
+    </div>
+    <span id="sandboxActiveModePill" class="status-pill neutral">Mode: Ready</span>
+  </div>
+
+  <div style="padding-top: 16px;">
+    <div class="grid-2" style="margin-bottom: 18px; gap: 16px;">
+      <div>
+        <label for="selectOrigCandidate" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--storm-dark); margin-bottom: 6px;">
+          1. Select Voter's Intended Candidate:
+        </label>
+        <select id="selectOrigCandidate" class="form-control" style="font-size: 0.92rem;">
+          {% for c in candidates %}
+            <option value="{{ c.id }}" data-name="{{ c.name }}" {% if c.id == selected_candidate.id %}selected{% endif %}>
+              #{{ c.id }} — {{ c.name }} ({{ c.affiliation }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label for="selectTamperCandidate" style="display: block; font-size: 0.85rem; font-weight: 600; color: var(--status-danger); margin-bottom: 6px;">
+          2. Select In-Transit Tampered Replacement:
+        </label>
+        <select id="selectTamperCandidate" class="form-control" style="font-size: 0.92rem; border-color: #fca5a5;">
+          {% for c in candidates %}
+            <option value="{{ c.id }}" data-name="{{ c.name }}" {% if c.id == tampered_candidate.id %}selected{% endif %}>
+              #{{ c.id }} — {{ c.name }} ({{ c.affiliation }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+      <button type="button" id="btnGenerateHmac" class="btn btn-primary btn-sm" style="background-color: var(--storm-dark); border-color: var(--storm-dark);">
+        Generate HMAC
+      </button>
+
+      <button type="button" id="btnSimulateTamper" class="btn btn-secondary btn-sm" style="border-color: #fca5a5; color: var(--status-danger); font-weight: 600;">
+        Simulate Packet Tampering
+      </button>
+
+      <button type="button" id="btnRunValidRequest" class="btn btn-secondary btn-sm" style="border-color: #bbf7d0; color: var(--status-success); font-weight: 600;">
+        Run Valid Request
+      </button>
+
+      <button type="button" id="btnResetSandbox" class="btn btn-secondary btn-sm" style="color: var(--storm-steel);">
+        Reset Simulation
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- STEP-BY-STEP CRYPTOGRAPHIC PIPELINE TIMELINE -->
+<!-- ========================================================================= -->
+
+<div id="pipelineContainer" style="display: flex; flex-direction: column; gap: 20px; margin-bottom: 32px;">
+
+  <!-- STEP 1: Original Voting Request -->
+  <div class="card" id="cardStep1" style="border-left: 4px solid var(--storm-steel); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--storm-steel); letter-spacing: 0.05em;">
+          STEP 1
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);">Original Voting Request</h3>
+      </div>
+      <span class="status-pill neutral" id="pillStep1Status">Payload Formatted</span>
+    </div>
+
+    <div class="grid-2" style="gap: 16px; margin-bottom: 14px;">
+      <div style="background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 16px;">
+        <div style="font-size: 0.8rem; color: var(--storm-steel); font-weight: 600; margin-bottom: 4px;">Selected Candidate</div>
+        <div id="step1DisplayCandidate" style="font-size: 1.15rem; font-weight: 700; color: var(--storm-dark);">
+          {{ selected_candidate.name }}
+        </div>
+      </div>
+
+      <div style="background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 12px 16px;">
+        <div style="font-size: 0.8rem; color: var(--storm-steel); font-weight: 600; margin-bottom: 4px;">Data Message</div>
+        <div id="step1DisplayMessage" style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 600; color: var(--storm-dark);">
+          candidate={{ selected_candidate.name }}
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;">
+      The voting message is the data that will be authenticated.
+    </p>
+
+    <!-- Generated HMAC Box (shown once generated) -->
+    <div id="step1HmacDetails" style="background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px;">
+      <div style="font-weight: 700; color: var(--storm-dark); font-size: 0.92rem; margin-bottom: 10px;">
+        HMAC-SHA256 Authentication Computation
+      </div>
+
+      <div class="grid-3" style="gap: 12px; margin-bottom: 12px;">
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Message (m)</div>
+          <div id="step1CalcMsg" style="font-family: var(--font-mono); font-size: 0.84rem; color: var(--storm-dark); margin-top: 2px;">
+            candidate={{ selected_candidate.name }}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Secret Key (K)</div>
+          <div style="font-family: var(--font-mono); font-size: 0.84rem; color: var(--storm-steel); margin-top: 2px;">
+            ••••••••••••••••
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Primitive</div>
+          <div style="font-family: var(--font-mono); font-size: 0.84rem; color: var(--storm-dark); margin-top: 2px;">
+            HMAC-SHA256(K, m)
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #0f172a; border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 10px;">
+        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
+          256-bit Authentication Tag
+        </div>
+        <div id="step1TagDigest" style="font-family: var(--font-mono); font-size: 0.84rem; color: #38bdf8; word-break: break-all;">
+          {{ initial_orig_tag }}
+        </div>
+      </div>
+
+      <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+        HMAC-SHA256 produces a 256-bit authentication tag from the message and shared secret key. The secret key itself is kept securely on the voter's device and the election authority.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Original Packet Transmission -->
+  <div class="card" id="cardStep2" style="border-left: 4px solid var(--storm-accent); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--storm-accent); letter-spacing: 0.05em;">
+          STEP 2
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);">Original Packet Transmission</h3>
+      </div>
+      <span class="status-pill success">PROTECTED ✓</span>
+    </div>
+
+    <!-- Outgoing Envelope Box -->
+    <div style="background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--storm-dark); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.04em;">
+        Outgoing Request Envelope
+      </div>
+
+      <div class="grid-2" style="gap: 14px;">
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Payload:</div>
+          <div id="step2Payload" style="font-family: var(--font-mono); font-size: 0.88rem; color: var(--storm-dark); margin-top: 2px;">
+            candidate={{ selected_candidate.name }}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">HMAC Authentication Tag:</div>
+          <div id="step2HmacTag" style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--storm-dark); margin-top: 2px; word-break: break-all;">
+            {{ initial_orig_tag[:32] }}...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visual Arrow Transmission Diagram -->
+    <div style="display: flex; align-items: center; justify-content: space-around; background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px; text-align: center; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+      <div style="flex: 1; min-width: 120px;">
+        <div style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem;">VOTER</div>
+        <div style="font-size: 0.8rem; color: var(--storm-steel);">Origin Client</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 140px; padding: 0 12px;">
+        <div style="font-size: 0.78rem; font-weight: 600; color: var(--storm-steel); margin-bottom: 4px;">Protected Request</div>
+        <div style="color: var(--storm-accent); font-size: 1.4rem; font-weight: bold;">&rarr; &bull; &rarr;</div>
+      </div>
+
+      <div style="flex: 1; min-width: 120px;">
+        <div style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem;">SERVER</div>
+        <div style="font-size: 0.8rem; color: var(--storm-steel);">Election Authority</div>
+      </div>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+      The message and its authentication tag are sent together. The secret key itself is never transmitted with the request.
+    </p>
+  </div>
+
+  <!-- STEP 3: In-Transit Status (Tampered vs Valid) -->
+  <div class="card" id="cardStep3" style="border-left: 4px solid var(--status-danger); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--status-danger); letter-spacing: 0.05em;" id="step3HeaderLabel">
+          STEP 3
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);" id="step3Title">
+          Simulate Packet Tampering (In-Transit Modification)
+        </h3>
+      </div>
+      <span class="status-pill danger" id="step3StatusPill">MODIFIED IN TRANSIT ⚠</span>
+    </div>
+
+    <div style="background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px;" id="step3BoxContent">
+      <div class="grid-2" style="gap: 14px;">
+        <div>
+          <div style="font-size: 0.78rem; color: #991b1b; font-weight: 600;">Intercepted & Modified Payload:</div>
+          <div id="step3PayloadDisplay" style="font-family: var(--font-mono); font-size: 0.92rem; font-weight: 700; color: #b91c1c; margin-top: 3px;">
+            candidate={{ tampered_candidate.name }}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: #991b1b; font-weight: 600;">Attached Authentication Tag:</div>
+          <div id="step3TagDisplay" style="font-family: var(--font-mono); font-size: 0.84rem; color: var(--storm-dark); margin-top: 3px; word-break: break-all;">
+            {{ initial_orig_tag[:32] }}... <span style="color: #b91c1c; font-weight: 600;">(Original Tag Retained)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0; line-height: 1.5;" id="step3Explanation">
+      An attacker can modify the vote in transit, but cannot compute a matching HMAC tag because the secret key is unknown to them.
+    </p>
+  </div>
+
+  <!-- STEP 4: Server HMAC Recalculation -->
+  <div class="card" id="cardStep4" style="border-left: 4px solid var(--storm-dark); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--storm-dark); letter-spacing: 0.05em;">
+          STEP 4
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);">Server HMAC Recalculation</h3>
+      </div>
+      <span class="status-pill neutral">Server Side</span>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;">
+      The server receives the incoming packet and retrieves its authentic stored copy of the voter's shared secret key. It then independently executes HMAC-SHA256 over the received message.
+    </p>
+
+    <div style="background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px;">
+      <div class="grid-3" style="gap: 12px; margin-bottom: 12px;">
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Received Message:</div>
+          <div id="step4ReceivedMsg" style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 600; color: var(--storm-dark); margin-top: 2px;">
+            candidate={{ tampered_candidate.name }}
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Server Shared Secret:</div>
+          <div style="font-family: var(--font-mono); font-size: 0.88rem; color: var(--storm-steel); margin-top: 2px;">
+            ••••••••••••••••
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--storm-steel); font-weight: 600;">Recalculation Formula:</div>
+          <div style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--storm-dark); margin-top: 2px;">
+            HMAC-SHA256(K, m_received)
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #0f172a; border-radius: var(--radius-sm); padding: 12px 14px;">
+        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">
+          Server Recalculated Tag
+        </div>
+        <div id="step4RecalculatedTag" style="font-family: var(--font-mono); font-size: 0.84rem; color: #fca5a5; word-break: break-all;">
+          {{ sample_sim.recalculated_tag }}
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+      The server generates its own authentication tag from the received message and the server's copy of the secret key.
+    </div>
+  </div>
+
+  <!-- STEP 5: Constant-Time Tag Comparison -->
+  <div class="card" id="cardStep5" style="border-left: 4px solid var(--storm-steel); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--storm-steel); letter-spacing: 0.05em;">
+          STEP 5
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);">Tag Comparison (Constant-Time Verification)</h3>
+      </div>
+      <span class="status-pill danger" id="step5MatchPill">✕ MISMATCH</span>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;">
+      The server compares the authentication tag received in the request against the recalculated tag using constant-time comparison (<code>hmac.compare_digest</code>) to eliminate timing side-channel vulnerabilities.
+    </p>
+
+    <!-- Side by Side Hex Comparison -->
+    <div style="background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; margin-bottom: 14px;">
+      <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: var(--storm-dark); margin-bottom: 4px;">
+          <span>Received Tag (Submitted with Request):</span>
+          <span style="color: var(--storm-steel); font-family: var(--font-mono);">256 bits</span>
+        </div>
+        <div id="step5ReceivedTag" style="font-family: var(--font-mono); font-size: 0.82rem; background: var(--bg-app); padding: 8px 12px; border-radius: var(--radius-sm); color: var(--storm-dark); word-break: break-all;">
+          {{ initial_orig_tag }}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: var(--storm-dark); margin-bottom: 4px;">
+          <span>Server Recalculated Tag:</span>
+          <span style="color: var(--storm-steel); font-family: var(--font-mono);">256 bits</span>
+        </div>
+        <div id="step5RecalcTag" style="font-family: var(--font-mono); font-size: 0.82rem; background: var(--bg-app); padding: 8px 12px; border-radius: var(--radius-sm); color: #b91c1c; word-break: break-all;">
+          {{ sample_sim.recalculated_tag }}
+        </div>
+      </div>
+
+      <div id="step5ComparisonResultBox" style="padding: 12px 16px; border-radius: var(--radius-sm); background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: #991b1b;">
+            Verification Primitive Result
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.86rem; color: #7f1d1d; margin-top: 2px;">
+            <code>hmac.compare_digest(received_tag, recalculated_tag) &rarr; False</code>
+          </div>
+        </div>
+        <span id="step5ResultBadge" style="font-weight: 800; font-size: 1.1rem; color: var(--status-danger);">✕ MISMATCH</span>
+      </div>
+    </div>
+
+    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;" id="step5Explanation">
+      Because the message was changed without recomputing the HMAC with the secret key, the tags do not match.
+    </div>
+  </div>
+
+  <!-- STEP 6: Security Decision -->
+  <div class="card" id="cardStep6" style="border-left: 4px solid var(--status-danger); margin-bottom: 0;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--status-danger); letter-spacing: 0.05em;" id="step6HeaderLabel">
+          STEP 6
+        </div>
+        <h3 style="margin-top: 2px; color: var(--storm-dark);">Security Decision & Server Enforcement</h3>
+      </div>
+      <span class="status-pill danger" id="step6DecisionBadge">INTEGRITY CHECK FAILED</span>
+    </div>
+
+    <div id="step6OutcomeCard" style="background: var(--status-danger-bg); border: 1px solid var(--status-danger-border); border-radius: var(--radius-md); padding: 18px; margin-bottom: 14px;">
+      <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: #991b1b; letter-spacing: 0.04em;">
+        Server Enforcement Action
+      </div>
+      <div id="step6ActionTitle" style="font-size: 1.25rem; font-weight: 800; color: #991b1b; margin: 4px 0 8px 0;">
+        REQUEST REJECTED / VOTE NOT STORED
+      </div>
+      <p id="step6ActionBody" style="font-size: 0.92rem; color: #7f1d1d; margin: 0; line-height: 1.55;">
+        The message was modified in transit. The authentication tag is invalid for the received message. The system safely discards the request before any ballot decryption or database storage occurs.
+      </p>
+    </div>
+
+    <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.55;">
+      <strong>Security Objective Met:</strong> The server guarantees data integrity by detecting corrupted or manipulated voting requests before state changes are committed. The rejection mechanism relies strictly on cryptographic verification without requiring assumptions regarding attacker identity or network origin.
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- COLLAPSIBLE SECTION: HOW HMAC-SHA256 WORKS (RFC 2104) -->
+<!-- ========================================================================= -->
+
+<div class="card" style="margin-bottom: 24px;">
+  <details style="cursor: pointer;">
+    <summary style="font-weight: 700; font-size: 1.05rem; color: var(--storm-dark); padding: 4px 0; outline: none;">
+      How HMAC-SHA256 Works (RFC 2104 Specification)
+    </summary>
+
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light); cursor: default;">
+      <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+        Keyed-Hash Message Authentication Code (HMAC) is specified in <strong>RFC 2104</strong> and NIST FIPS 198-1. It provides data integrity and authenticity by combining a secret key with an underlying cryptographic hash function (SHA-256).
+      </p>
+
+      <!-- RFC 2104 Mathematical Formula Card -->
+      <div style="background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px; margin-bottom: 20px;">
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--storm-steel); margin-bottom: 8px;">
+          Standard RFC 2104 Construction Formula
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 1.05rem; font-weight: bold; color: var(--storm-dark); background: #ffffff; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); overflow-x: auto;">
+          HMAC(K, m) = H((K' &oplus; opad) || H((K' &oplus; ipad) || m))
+        </div>
+      </div>
+
+      <!-- Variable Definitions Table -->
+      <div class="table-container" style="margin-bottom: 20px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Component</th>
+              <th style="width: 25%;">Value / Definition</th>
+              <th>Cryptographic Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>K</code></td>
+              <td>Shared Secret Key</td>
+              <td>Confidential key known only to the voter and the election server.</td>
+            </tr>
+            <tr>
+              <td><code>K'</code></td>
+              <td>Normalized Key (64 bytes)</td>
+              <td>If key > 64 bytes, <code>SHA-256(K)</code> is used; if &lt; 64 bytes, zero-padded to 64 bytes.</td>
+            </tr>
+            <tr>
+              <td><code>ipad</code></td>
+              <td>Inner Pad: <code>0x36</code> repeated</td>
+              <td>64-byte constant used to compute inner hash <code>(K' &oplus; ipad)</code>.</td>
+            </tr>
+            <tr>
+              <td><code>opad</code></td>
+              <td>Outer Pad: <code>0x5C</code> repeated</td>
+              <td>64-byte constant used to compute outer hash <code>(K' &oplus; opad)</code>.</td>
+            </tr>
+            <tr>
+              <td><code>m</code></td>
+              <td>Voting Payload Message</td>
+              <td>The exact canonical ballot data string (e.g. <code>candidate=Elena Rostova</code>).</td>
+            </tr>
+            <tr>
+              <td><code>H</code></td>
+              <td>SHA-256 Hash Function</td>
+              <td>Produces a fixed 256-bit (32-byte / 64-hexadecimal character) output digest.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Why HMAC is stronger than simple hashing -->
+      <div style="background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px;">
+        <div style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem; margin-bottom: 6px;">
+          Why HMAC is Stronger Than Simple Hash Concatenation (e.g., H(key || message))
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 8px;">
+          Naive constructions such as <code>H(key || message)</code> are vulnerable to <strong>Length Extension Attacks</strong> when using Merkle&ndash;Damg&aring;rd hash algorithms like SHA-256. An attacker who knows the message and tag can compute a valid tag for <code>message || padding || extension</code> without knowing the secret key.
+        </p>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin: 0;">
+          HMAC's nested inner and outer passes prevent length extension by hashing the intermediate hash with an outer key-derived mask <code>(K' &oplus; opad)</code>. This guarantees pseudo-randomness and unforgeability.
+        </p>
+      </div>
+    </div>
+  </details>
+</div>
+
+<!-- ========================================================================= -->
+<!-- DUAL-LAYER SECURITY ARCHITECTURE: WHERE RSA FITS -->
+<!-- ========================================================================= -->
+
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+    <div>
+      <h3 style="color: var(--storm-dark); margin-bottom: 2px;">Where RSA Fits in the SecureVote Architecture</h3>
+      <div style="font-size: 0.85rem; color: var(--storm-steel);">
+        Understanding the dual-layer roles of RSA Asymmetric Encryption and HMAC Message Authentication
+      </div>
+    </div>
+    <span class="status-pill neutral">Dual Security</span>
+  </div>
+
+  <div class="grid-2" style="margin-top: 16px; gap: 16px;">
+    <!-- RSA Card -->
+    <div style="border: 1px solid var(--border-light); border-top: 4px solid var(--storm-dark); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+      <div style="font-weight: 700; color: var(--storm-dark); font-size: 1.05rem; margin-bottom: 6px;">
+        RSA Public-Key Cryptography
+      </div>
+      <div style="display: inline-block; background: var(--bg-app); color: var(--storm-steel); font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-sm); margin-bottom: 12px;">
+        CONFIDENTIALITY
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 10px;">
+        Protects the voter's candidate selection from eavesdropping, network sniffers, and intermediate proxies.
+      </p>
+      <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 18px; margin: 0; line-height: 1.5;">
+        <li>Voter encrypts ballot using Election Authority public key: <code>C = M^e mod n</code>.</li>
+        <li>Only the server possessing private key <code>d</code> can recover <code>M = C^d mod n</code>.</li>
+        <li>Ensures ballot secrecy and anonymous tallying.</li>
+      </ul>
+    </div>
+
+    <!-- HMAC Card -->
+    <div style="border: 1px solid var(--border-light); border-top: 4px solid var(--storm-accent); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+      <div style="font-weight: 700; color: var(--storm-dark); font-size: 1.05rem; margin-bottom: 6px;">
+        HMAC-SHA256 Keyed Authentication
+      </div>
+      <div style="display: inline-block; background: var(--bg-app); color: var(--storm-accent); font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: var(--radius-sm); margin-bottom: 12px;">
+        INTEGRITY & AUTHENTICATION
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 10px;">
+        Protects the transmission envelope against tampering, injection, and unauthorized parameter modification.
+      </p>
+      <ul style="font-size: 0.85rem; color: var(--text-muted); padding-left: 18px; margin: 0; line-height: 1.5;">
+        <li>Computes 256-bit authentication tag over request payload using shared secret.</li>
+        <li>Server re-hashes received payload and verifies with <code>hmac.compare_digest</code>.</li>
+        <li>Ensures modified votes are immediately rejected before decryption.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top: 16px; padding: 14px 18px; background: var(--bg-app); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+    <div style="font-size: 0.9rem; color: var(--storm-dark); line-height: 1.55;">
+      <strong>Security Synthesis:</strong> <em>"RSA ensures that unauthorized parties cannot read protected data. HMAC-SHA256 ensures that data has not been modified in transit."</em> Together, they guarantee that every counted vote is both private and authentically cast.
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- CIA SECURITY OVERVIEW SECTION -->
+<!-- ========================================================================= -->
+
+<div class="card" style="margin-bottom: 30px;">
+  <div class="card-header" style="border-bottom: 1px solid var(--border-light); padding-bottom: 12px;">
+    <div>
+      <h3 style="color: var(--storm-dark); margin-bottom: 2px;">CIA Security Principles in SecureVote</h3>
+      <div style="font-size: 0.85rem; color: var(--storm-steel);">
+        How SecureVote guarantees the fundamental pillars of information security
+      </div>
+    </div>
+    <span class="status-pill success">System Enforced</span>
+  </div>
+
+  <div class="grid-3" style="margin-top: 16px; gap: 16px;">
+    <!-- Confidentiality -->
+    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; background: #ffffff;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem;">Confidentiality</span>
+        <span class="status-pill success" style="font-size: 0.72rem;">RSA-2048 / Demo</span>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+        Ballot contents are encrypted before leaving the voter's browser. Eavesdroppers cannot view candidate selections, and voter identity is decoupled using salted SHA-256 anonymization.
+      </p>
+    </div>
+
+    <!-- Integrity -->
+    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; background: #ffffff;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem;">Integrity</span>
+        <span class="status-pill success" style="font-size: 0.72rem;">HMAC-SHA256</span>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+        HMAC-SHA256 guarantees that in-transit modification is detected and rejected with constant-time verification. Tampered packets are safely discarded without database writes.
+      </p>
+    </div>
+
+    <!-- Availability -->
+    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; background: #ffffff;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-weight: 700; color: var(--storm-dark); font-size: 0.95rem;">Availability</span>
+        <span class="status-pill success" style="font-size: 0.72rem;">Fault Tolerant</span>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+        Early rejection of invalid packets prevents malformed data from contaminating the ledger. Strict single-vote constraints prevent race conditions and duplicate voting attempts.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // Elements
+  const selectOrig = document.getElementById("selectOrigCandidate");
+  const selectTamper = document.getElementById("selectTamperCandidate");
+  const btnGenerate = document.getElementById("btnGenerateHmac");
+  const btnTamper = document.getElementById("btnSimulateTamper");
+  const btnValid = document.getElementById("btnRunValidRequest");
+  const btnReset = document.getElementById("btnResetSandbox");
+  const activeModePill = document.getElementById("sandboxActiveModePill");
+
+  // Step 1 Elements
+  const s1DisplayCand = document.getElementById("step1DisplayCandidate");
+  const s1DisplayMsg = document.getElementById("step1DisplayMessage");
+  const s1CalcMsg = document.getElementById("step1CalcMsg");
+  const s1TagDigest = document.getElementById("step1TagDigest");
+  const pillStep1Status = document.getElementById("pillStep1Status");
+
+  // Step 2 Elements
+  const s2Payload = document.getElementById("step2Payload");
+  const s2HmacTag = document.getElementById("step2HmacTag");
+
+  // Step 3 Elements
+  const cardStep3 = document.getElementById("cardStep3");
+  const step3Title = document.getElementById("step3Title");
+  const step3StatusPill = document.getElementById("step3StatusPill");
+  const step3Payload = document.getElementById("step3PayloadDisplay");
+  const step3Tag = document.getElementById("step3TagDisplay");
+  const step3Explanation = document.getElementById("step3Explanation");
+  const step3BoxContent = document.getElementById("step3BoxContent");
+
+  // Step 4 Elements
+  const cardStep4 = document.getElementById("cardStep4");
+  const step4ReceivedMsg = document.getElementById("step4ReceivedMsg");
+  const step4RecalcTag = document.getElementById("step4RecalculatedTag");
+
+  // Step 5 Elements
+  const cardStep5 = document.getElementById("cardStep5");
+  const step5ReceivedTag = document.getElementById("step5ReceivedTag");
+  const step5RecalcTag = document.getElementById("step5RecalcTag");
+  const step5MatchPill = document.getElementById("step5MatchPill");
+  const step5ResultBadge = document.getElementById("step5ResultBadge");
+  const step5ComparisonBox = document.getElementById("step5ComparisonResultBox");
+  const step5Explanation = document.getElementById("step5Explanation");
+
+  // Step 6 Elements
+  const cardStep6 = document.getElementById("cardStep6");
+  const step6DecisionBadge = document.getElementById("step6DecisionBadge");
+  const step6OutcomeCard = document.getElementById("step6OutcomeCard");
+  const step6ActionTitle = document.getElementById("step6ActionTitle");
+  const step6ActionBody = document.getElementById("step6ActionBody");
+
+  let currentOrigTag = "{{ initial_orig_tag }}";
+
+  function getSelectedOrigName() {
+    return selectOrig.options[selectOrig.selectedIndex].getAttribute("data-name") || "Elena Rostova";
+  }
+
+  function getSelectedTamperName() {
+    return selectTamper.options[selectTamper.selectedIndex].getAttribute("data-name") || "Marcus Vance";
+  }
+
+  // Update original candidate display on selection change
+  selectOrig.addEventListener("change", () => {
+    const name = getSelectedOrigName();
+    s1DisplayCand.innerText = name;
+    s1DisplayMsg.innerText = `candidate=${name}`;
+    s1CalcMsg.innerText = `candidate=${name}`;
+    s2Payload.innerText = `candidate=${name}`;
+    
+    // Automatically recalculate HMAC for newly selected candidate
+    fetchHmacStep("generate");
+  });
+
+  // Action: Generate HMAC
+  btnGenerate.addEventListener("click", () => {
+    fetchHmacStep("generate");
+  });
+
+  // Action: Simulate Tampering
+  btnTamper.addEventListener("click", () => {
+    fetchHmacStep("tamper");
+  });
+
+  // Action: Run Valid Request
+  btnValid.addEventListener("click", () => {
+    fetchHmacStep("valid");
+  });
+
+  // Action: Reset Sandbox
+  btnReset.addEventListener("click", () => {
+    selectOrig.selectedIndex = 0;
+    if (selectTamper.options.length > 1) selectTamper.selectedIndex = 1;
+    const name = getSelectedOrigName();
+    s1DisplayCand.innerText = name;
+    s1DisplayMsg.innerText = `candidate=${name}`;
+    s1CalcMsg.innerText = `candidate=${name}`;
+    s2Payload.innerText = `candidate=${name}`;
+
+    fetchHmacStep("generate", () => {
+      activeModePill.className = "status-pill neutral";
+      activeModePill.innerText = "Mode: Reset";
+      
+      // Reset card highlights
+      cardStep3.style.borderColor = "var(--border-light)";
+      cardStep4.style.borderColor = "var(--border-light)";
+      cardStep5.style.borderColor = "var(--border-light)";
+      cardStep6.style.borderColor = "var(--border-light)";
+    });
+  });
+
+  function fetchHmacStep(mode, callback) {
+    const origName = getSelectedOrigName();
+    const tamperName = getSelectedTamperName();
+
+    fetch("/api/hmac/sandbox-step", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: mode,
+        candidate_name: origName,
+        tampered_candidate_name: tamperName
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) return;
+
+      if (mode === "generate") {
+        currentOrigTag = data.tag;
+        s1TagDigest.innerText = data.tag;
+        s2HmacTag.innerText = data.tag.slice(0, 32) + "...";
+        pillStep1Status.className = "status-pill success";
+        pillStep1Status.innerText = "HMAC Generated";
+        activeModePill.className = "status-pill success";
+        activeModePill.innerText = "Mode: HMAC Generated";
+        if (callback) callback();
+        return;
+      }
+
+      currentOrigTag = data.original_tag;
+      s1TagDigest.innerText = data.original_tag;
+      s2HmacTag.innerText = data.original_tag.slice(0, 32) + "...";
+
+      if (mode === "tamper") {
+        activeModePill.className = "status-pill danger";
+        activeModePill.innerText = "Mode: Tampered Attack Simulation";
+
+        // Step 3: Tampered
+        cardStep3.style.borderLeftColor = "var(--status-danger)";
+        step3Title.innerText = "Simulate Packet Tampering (In-Transit Modification)";
+        step3StatusPill.className = "status-pill danger";
+        step3StatusPill.innerText = "MODIFIED IN TRANSIT ⚠";
+        step3BoxContent.style.background = "var(--status-danger-bg)";
+        step3BoxContent.style.borderColor = "var(--status-danger-border)";
+        step3Payload.innerText = data.tampered_message;
+        step3Payload.style.color = "#b91c1c";
+        step3Tag.innerHTML = `${data.original_tag.slice(0, 32)}... <span style="color: #b91c1c; font-weight: 600;">(Original Tag Retained)</span>`;
+        step3Explanation.innerText = "An attacker can modify the vote in transit, but cannot compute a matching HMAC tag because the secret key is unknown to them.";
+
+        // Step 4: Server Recalculation
+        step4ReceivedMsg.innerText = data.server_received_payload;
+        step4RecalcTag.innerText = data.server_recalculated_tag;
+        step4RecalcTag.style.color = "#fca5a5";
+
+        // Step 5: Tag Comparison
+        step5ReceivedTag.innerText = data.server_received_tag;
+        step5RecalcTag.innerText = data.server_recalculated_tag;
+        step5RecalcTag.style.color = "#b91c1c";
+        step5MatchPill.className = "status-pill danger";
+        step5MatchPill.innerText = "✕ MISMATCH";
+        step5ResultBadge.style.color = "var(--status-danger)";
+        step5ResultBadge.innerText = "✕ MISMATCH";
+        step5ComparisonBox.style.background = "var(--status-danger-bg)";
+        step5ComparisonBox.style.borderColor = "var(--status-danger-border)";
+        step5Explanation.innerText = "Because the message was changed without recomputing the HMAC with the secret key, the tags do not match.";
+
+        // Step 6: Security Decision
+        cardStep6.style.borderLeftColor = "var(--status-danger)";
+        step6DecisionBadge.className = "status-pill danger";
+        step6DecisionBadge.innerText = "INTEGRITY CHECK FAILED";
+        step6OutcomeCard.style.background = "var(--status-danger-bg)";
+        step6OutcomeCard.style.borderColor = "var(--status-danger-border)";
+        step6ActionTitle.style.color = "#991b1b";
+        step6ActionTitle.innerText = "REQUEST REJECTED / VOTE NOT STORED";
+        step6ActionBody.style.color = "#7f1d1d";
+        step6ActionBody.innerText = data.explanation;
+      }
+      else if (mode === "valid") {
+        activeModePill.className = "status-pill success";
+        activeModePill.innerText = "Mode: Valid Request Verification";
+
+        // Step 3: Valid Unaltered
+        cardStep3.style.borderLeftColor = "var(--status-success)";
+        step3Title.innerText = "Legitimate Packet Transmission (Unmodified Channel)";
+        step3StatusPill.className = "status-pill success";
+        step3StatusPill.innerText = "UNMODIFIED IN TRANSIT ✓";
+        step3BoxContent.style.background = "var(--status-success-bg)";
+        step3BoxContent.style.borderColor = "var(--status-success-border)";
+        step3Payload.innerText = data.original_message;
+        step3Payload.style.color = "#15803d";
+        step3Tag.innerHTML = `${data.original_tag.slice(0, 32)}... <span style="color: #15803d; font-weight: 600;">(Authentic Tag)</span>`;
+        step3Explanation.innerText = "The message travels across the network unmodified, retaining its authentic HMAC authentication tag.";
+
+        // Step 4: Server Recalculation
+        step4ReceivedMsg.innerText = data.server_received_payload;
+        step4RecalcTag.innerText = data.server_recalculated_tag;
+        step4RecalcTag.style.color = "#86efac";
+
+        // Step 5: Tag Comparison
+        step5ReceivedTag.innerText = data.server_received_tag;
+        step5RecalcTag.innerText = data.server_recalculated_tag;
+        step5RecalcTag.style.color = "#15803d";
+        step5MatchPill.className = "status-pill success";
+        step5MatchPill.innerText = "✓ MATCH";
+        step5ResultBadge.style.color = "var(--status-success)";
+        step5ResultBadge.innerText = "✓ MATCH";
+        step5ComparisonBox.style.background = "var(--status-success-bg)";
+        step5ComparisonBox.style.borderColor = "var(--status-success-border)";
+        step5Explanation.innerText = "Both tags are identical byte-for-byte; integrity is mathematically verified via constant-time comparison.";
+
+        // Step 6: Security Decision
+        cardStep6.style.borderLeftColor = "var(--status-success)";
+        step6DecisionBadge.className = "status-pill success";
+        step6DecisionBadge.innerText = "INTEGRITY VERIFIED";
+        step6OutcomeCard.style.background = "var(--status-success-bg)";
+        step6OutcomeCard.style.borderColor = "var(--status-success-border)";
+        step6ActionTitle.style.color = "#15803d";
+        step6ActionTitle.innerText = "VOTE ACCEPTED";
+        step6ActionBody.style.color = "#14532d";
+        step6ActionBody.innerText = data.explanation;
+      }
+
+      if (callback) callback();
+    })
+    .catch(err => console.error("Sandbox simulation error:", err));
+  }
+});
+</script>
+{% endblock %}

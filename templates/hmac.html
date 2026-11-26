@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}HMAC-SHA256 Authentication | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <span class="status-pill success" style="margin-bottom: 8px;">● Keyed Message Authentication</span>
+  <h1>HMAC-SHA256 Authentication</h1>
+  <p class="subtitle" style="margin-bottom: 0;">
+    RFC 2104 / FIPS 198-1 implementation ensuring ballot integrity and sender authenticity.
+  </p>
+</div>
+
+<!-- Security Sub-Navigation -->
+<div class="sub-nav">
+  <a href="{{ url_for('security_overview') }}" class="sub-nav-item">Overview (CIA Triad)</a>
+  <a href="{{ url_for('security_rsa') }}" class="sub-nav-item">RSA Cryptography</a>
+  <a href="{{ url_for('security_hmac') }}" class="sub-nav-item active">HMAC-SHA256</a>
+  <a href="{{ url_for('security_integrity_demo') }}" class="sub-nav-item">Tampering Simulation</a>
+  <a href="{{ url_for('security_availability') }}" class="sub-nav-item">System Availability</a>
+</div>
+
+<!-- Section 1: Conceptual Foundations -->
+<div class="grid-2" style="margin-bottom: 28px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 6px;">
+      What HMAC-SHA256 Provides
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+      <strong>Integrity & Authenticity:</strong> Binds the ballot payload to a shared secret key possessed only by the legitimate voter and the election authority. Ensures that any alteration in transit creates an invalid tag.
+    </p>
+    <div style="font-size: 0.85rem; color: var(--accent-blue); font-weight: 600;">
+      Tag Length: 256 bits (32 bytes / 64 hexadecimal characters)
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0; border-left: 4px solid var(--status-warning);">
+    <div style="font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 6px;">
+      What HMAC-SHA256 Does NOT Provide
+    </div>
+    <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+      <strong>HMAC is NOT Encryption:</strong> It does not conceal the ballot contents. An observer reading an HMAC tag cannot reverse it, but can read any unencrypted payload. <strong>RSA provides confidentiality; HMAC provides integrity.</strong>
+    </p>
+    <div style="font-size: 0.85rem; color: var(--status-warning); font-weight: 600;">
+      SHA-256 &ne; Encryption &bull; HMAC-SHA256 &ne; Encryption
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Interactive HMAC Generator Sandbox -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">Interactive HMAC-SHA256 Calculator</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Compute standard RFC 2104 authentication tags for any vote message and secret key
+      </div>
+    </div>
+    <span class="status-pill neutral">Live Calculator</span>
+  </div>
+
+  <div class="grid-2">
+    <div>
+      <div class="form-group">
+        <label class="form-label" for="hmacInputMessage">Vote Message / Payload:</label>
+        <input type="text" id="hmacInputMessage" class="form-control" value="{{ sample_msg }}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="hmacInputKey">Shared Secret Key (K):</label>
+        <input type="text" id="hmacInputKey" class="form-control" value="{{ sample_key }}">
+      </div>
+      <button type="button" id="btnComputeHMAC" class="btn btn-primary btn-sm">
+        Compute HMAC-SHA256 Tag &rarr;
+      </button>
+    </div>
+
+    <div>
+      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;">
+        Authentication Tag Output:
+      </div>
+      <div id="hmacTagDisplay" class="code-block" style="font-size: 0.86rem; word-break: break-all; margin-top: 0;">
+        {{ breakdown.step_5_final_tag.final_tag_hex }}
+      </div>
+      <div style="font-size: 0.82rem; color: var(--status-success); font-weight: 600;">
+        ✓ Verified with Standard Cryptographic Library (RFC 2104 Compliant)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: RFC 2104 Padding & Mathematical Breakdown -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">RFC 2104 Padding Construction</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Standard double-hash construction avoiding length extension vulnerabilities
+      </div>
+    </div>
+    <span class="status-pill neutral">RFC 2104 Specification</span>
+  </div>
+
+  <div style="margin-bottom: 18px; font-size: 0.9rem; color: var(--text-muted);">
+    Unlike naive constructions that compute <span class="code-inline">SHA256(key + message)</span>, HMAC applies inner (<span class="code-inline">ipad=0x36</span>) and outer (<span class="code-inline">opad=0x5C</span>) padding masks:
+  </div>
+
+  <!-- Mathematical Pipeline Steps -->
+  <div id="hmacStepsContainer" style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+    <!-- Step 1 -->
+    <div style="border: 1px solid var(--border-light); padding: 12px 16px; border-radius: var(--radius-md); background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+        <strong>Step 1: Key Conditioning (K')</strong>
+        <span class="code-inline">Length: 64 bytes</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Key bytes padded with zeros to match SHA-256 block size (64 bytes / 512 bits):
+        <span class="code-inline" id="step1KeyHex">{{ breakdown.step_1_key_prep.padded_key_hex }}</span>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div style="border: 1px solid var(--border-light); padding: 12px 16px; border-radius: var(--radius-md); background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+        <strong>Step 2: Inner Pad XOR Mask</strong>
+        <span class="code-inline">K' ⊕ 0x36</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Padded key XORed with inner pad constant (0x36 repeated 64 times):
+        <span class="code-inline" id="step2IpadHex">{{ breakdown.step_2_inner_pad.k_xor_ipad_hex }}</span>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div style="border: 1px solid var(--border-light); padding: 12px 16px; border-radius: var(--radius-md); background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+        <strong>Step 3: Inner Hash Calculation</strong>
+        <span class="code-inline">SHA-256((K' ⊕ ipad) || Message)</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); word-break: break-all;">
+        Inner digest: <span class="code-inline" id="step3InnerHash" style="color: var(--accent-blue);">{{ breakdown.step_3_inner_hash.inner_hash_hex }}</span>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div style="border: 1px solid var(--border-light); padding: 12px 16px; border-radius: var(--radius-md); background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+        <strong>Step 4: Outer Pad XOR Mask</strong>
+        <span class="code-inline">K' ⊕ 0x5C</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Padded key XORed with outer pad constant (0x5C repeated 64 times):
+        <span class="code-inline" id="step4OpadHex">{{ breakdown.step_4_outer_pad.k_xor_opad_hex }}</span>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div style="border: 1px solid var(--border-light); padding: 12px 16px; border-radius: var(--radius-md); background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+        <strong>Step 5: Final Authentication Tag</strong>
+        <span class="status-pill success">Verified 256-Bit Digest</span>
+      </div>
+      <div class="code-block" id="step5FinalTag" style="font-size: 0.86rem; word-break: break-all; margin: 6px 0;">
+        {{ breakdown.step_5_final_tag.final_tag_hex }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Constant-Time Verification -->
+<div class="card" style="border-left: 4px solid var(--status-success);">
+  <h3 style="margin-bottom: 6px;">Constant-Time Digest Verification</h3>
+  <p style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+    When the server verifies incoming ballots, it recomputes the expected HMAC tag and compares it to the received tag using Python's <span class="code-inline">hmac.compare_digest()</span>. 
+    Standard string equality (<span class="code-inline">==</span>) short-circuits on the first non-matching byte, leaking timing clues that enable side-channel forgery attacks. Constant-time comparison examines all 32 bytes in uniform time regardless of match position.
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const btnCompute = document.getElementById("btnComputeHMAC");
+    if (btnCompute) {
+        btnCompute.addEventListener("click", () => {
+            const msg = document.getElementById("hmacInputMessage").value;
+            const key = document.getElementById("hmacInputKey").value;
+            fetch("/api/hmac/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: msg, key: key })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const b = data.breakdown;
+                    document.getElementById("hmacTagDisplay").innerText = b.step_5_final_tag.final_tag_hex;
+                    document.getElementById("step1KeyHex").innerText = b.step_1_key_prep.padded_key_hex;
+                    document.getElementById("step2IpadHex").innerText = b.step_2_inner_pad.k_xor_ipad_hex;
+                    document.getElementById("step3InnerHash").innerText = b.step_3_inner_hash.inner_hash_hex;
+                    document.getElementById("step4OpadHex").innerText = b.step_4_outer_pad.k_xor_opad_hex;
+                    document.getElementById("step5FinalTag").innerText = b.step_5_final_tag.final_tag_hex;
+                } else {
+                    alert("HMAC calculation error: " + data.error);
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

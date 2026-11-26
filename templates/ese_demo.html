@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}ESE Practical Exam Demo Mode | 10-Step Guide{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1>🎓 ESE Practical Examination Demonstration Mode</h1>
+            <p style="color: var(--text-secondary);">
+                Fixed 10-Screen Sequential Walkthrough for College Examiners and Laboratory Viva Evaluation.
+            </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 0.9rem; color: var(--text-muted);">Step:</span>
+            <span id="eseCurrentStepNum" class="brand-badge" style="font-size: 0.9rem;">1 / 10</span>
+        </div>
+    </div>
+</div>
+
+<!-- Wizard Container -->
+<div class="ese-wizard">
+
+    <!-- Screen 1: Project Introduction -->
+    <div class="ese-screen" data-screen-index="0">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-cyan);">
+                <span>Screen 1:</span> Project Introduction & Cryptographic Architecture
+            </h2>
+            <span class="brand-badge">Overview</span>
+        </div>
+        <p style="font-size: 1rem; color: #cbd5e1; margin-bottom: 20px;">
+            Welcome to the <strong>Secure Electronic Voting System</strong> built for the Cryptography and Information Security (CIS) End Semester Practical Examination. This project integrates exactly two core cryptographic concepts: <strong>RSA Public Key Cryptography</strong> and <strong>HMAC-SHA256 Authentication</strong>.
+        </p>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">The application initialized its dual-layer cryptographic architecture. The election authority establishes an RSA asymmetric key pair and distributes HMAC credentials to voters.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Electronic voting systems face dual threats: eavesdropping (violating voter confidentiality) and active packet tampering (violating ballot integrity). A dual-layer model solves both simultaneously.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Comprehensive Security Architecture:</strong> Sets the foundation for Confidentiality, Integrity, and Authentication.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: RSA Key Generation -->
+    <div class="ese-screen" data-screen-index="1" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-blue);">
+                <span>Screen 2:</span> RSA Key Generation (p, q ➔ n, φ(n) ➔ e, d)
+            </h2>
+            <span class="key-badge key-public">Asymmetric Math</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Active Mathematical Parameters</div>
+            <div class="formula-content" style="font-size: 0.95rem;">
+                Primes: p = {{ rsa.p }}, q = {{ rsa.q }}<br>
+                Modulus: n = p × q = {{ rsa.p }} × {{ rsa.q }} = <strong>{{ rsa.n }}</strong><br>
+                Euler's Totient: φ(n) = (p - 1)(q - 1) = {{ rsa.p - 1 }} × {{ rsa.q - 1 }} = <strong>{{ rsa.phi }}</strong><br>
+                Public Exponent: e = <strong>{{ rsa.e }}</strong> (where gcd({{ rsa.e }}, {{ rsa.phi }}) = 1)<br>
+                Private Exponent: d = <strong>{{ rsa.d }}</strong> (where {{ rsa.d }} × {{ rsa.e }} mod {{ rsa.phi }} = 1)
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">Selected primes p=61 and q=53. Computed modulus n=3233 and totient φ(n)=3120. Picked public exponent e=17 and derived private exponent d=2753 using Extended Euclidean Algorithm.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Asymmetric key generation ensures that anyone can encrypt ballots using public key (e, n), but only the election server with private key (d, n) can decrypt them.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Key Security & Foundation for Confidentiality:</strong> Separates public encryption from private decryption capability.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 3: RSA Encryption -->
+    <div class="ese-screen" data-screen-index="2" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-blue);">
+                <span>Screen 3:</span> RSA Encryption (C = M<sup>e</sup> mod n)
+            </h2>
+            <span class="key-badge key-public">Public Key Operation</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Encryption Arithmetic Example</div>
+            <div class="formula-content" style="font-size: 0.95rem;">
+                Plaintext (M) = 42<br>
+                Formula: C = M<sup>e</sup> mod n = 42<sup>17</sup> mod 3233<br>
+                Ciphertext (C) = <span style="color: var(--accent-cyan); font-weight: bold;">2557</span>
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">The plaintext number 42 was raised to public exponent e=17 modulo n=3233, producing the ciphertext integer 2557.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Converts readable voter ballot selections into ciphertext integers before transmission over untrusted networks.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Confidentiality:</strong> Prevents network eavesdroppers from discovering which candidate was chosen.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4: RSA Decryption -->
+    <div class="ese-screen" data-screen-index="3" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: #f87171;">
+                <span>Screen 4:</span> RSA Decryption (M = C<sup>d</sup> mod n)
+            </h2>
+            <span class="key-badge key-private">Private Key Operation</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Decryption Arithmetic Trace</div>
+            <div class="formula-content" style="font-size: 0.95rem;">
+                Ciphertext (C) = 2557<br>
+                Formula: M = C<sup>d</sup> mod n = 2557<sup>2753</sup> mod 3233<br>
+                Recovered Plaintext (M) = <span style="color: #10b981; font-weight: bold;">42</span> (Exact Match!)
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">The election server applied private exponent d=2753: 2557^2753 mod 3233, successfully recovering the original message 42.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Allows the official election tabulation server to read the true vote choice for counting without relying on an insecure symmetric key.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Confidentiality & Decryption Authorization:</strong> Only the possessor of the private key can recover the ballot.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 5: HMAC Generation -->
+    <div class="ese-screen" data-screen-index="4" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-cyan);">
+                <span>Screen 5:</span> HMAC-SHA256 Generation (RFC 2104)
+            </h2>
+            <span class="brand-badge">Integrity Tag</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">RFC 2104 Pad Construction</div>
+            <div class="formula-content" style="font-size: 0.9rem;">
+                Message: "Candidate_A" | Key: "VotingSecret123"<br>
+                HMAC(K, M) = SHA256((K' ⊕ 0x5C) || SHA256((K' ⊕ 0x36) || M))<br>
+                Tag: <span style="color: var(--accent-cyan); word-break: break-all; font-size: 0.82rem;">2a979ceb36203cf3d2c69c6fcbe3aa64e62846dd6c4c5ea2b144fa54ebc52119</span>
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">Applied inner pad (0x36) and outer pad (0x5C) XOR with the shared secret key and hashed twice with SHA-256 to generate a 256-bit tag.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Protects the message against tampering and proves the sender knows the secret key. Simple hashing alone (SHA256(M)) provides no key authentication.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Message Integrity & Authentication:</strong> Produces a cryptographic seal tied to both data and secret key.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 6: HMAC Verification -->
+    <div class="ese-screen" data-screen-index="5" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: #10b981;">
+                <span>Screen 6:</span> Constant-Time HMAC Verification
+            </h2>
+            <span class="key-badge key-public">Verification</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Server Verification Step</div>
+            <div class="formula-content" style="font-size: 0.9rem;">
+                Received Tag == Server_Calculated_Tag ?<br>
+                Result: <span style="color: #10b981; font-weight: bold;">hmac.compare_digest() == TRUE</span><br>
+                Status: ✓ Message Integrity Verified & Voter Authenticated
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">The server recalculated HMAC-SHA256 over the received message using its copy of the voter's secret key and executed constant-time comparison.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Confirms that the message was not modified in transit and prevents side-channel timing attacks that could leak secret key bytes.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Timing Attack Resistance & Authenticity:</strong> Validates payload origin without timing vulnerabilities.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 7: Vote Submission -->
+    <div class="ese-screen" data-screen-index="6" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-cyan);">
+                <span>Screen 7:</span> Dual-Layer Secure Vote Submission
+            </h2>
+            <span class="brand-badge">Integration</span>
+        </div>
+        <p style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 16px;">
+            The voter submits their ballot. The payload is encrypted with RSA, and the transmission packet <code>(Encrypted_Vote || Voter_ID || Timestamp)</code> is authenticated with HMAC-SHA256.
+        </p>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">Both cryptographic algorithms worked together in unison. RSA sealed the candidate choice, while HMAC sealed the transmission packet.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Neither algorithm is sufficient alone: RSA alone doesn't detect unauthorized active payload tampering without certificates; HMAC alone does not encrypt data.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Integrated Confidentiality + Integrity + Authentication:</strong> Complete end-to-end voting protection.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 8: Tampering Attack -->
+    <div class="ese-screen" data-screen-index="7" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: var(--accent-red);">
+                <span>Screen 8:</span> Man-in-the-Middle Tampering Simulation
+            </h2>
+            <span class="key-badge key-private">Attack Phase</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Active Adversary Interception</div>
+            <div class="formula-content" style="font-size: 0.9rem; color: #fca5a5;">
+                Voter's Intended Vote: <strong>Candidate A</strong><br>
+                Adversary Modifies Payload To: <strong>Candidate B</strong><br>
+                Transmitted HMAC Tag: Kept as original (Adversary lacks secret key)
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">An active network attacker intercepted the transmission packet and flipped the vote choice from Candidate A to Candidate B without updating the HMAC tag.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Demonstrates real-world threats where malicious actors or compromised proxies try to manipulate election outcomes in transit.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Active Threat Simulation:</strong> Simulates a violation of message integrity to test defense readiness.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 9: Tampering Detected -->
+    <div class="ese-screen" data-screen-index="8" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: #ef4444;">
+                <span>Screen 9:</span> Tampering Detected & Vote Rejected
+            </h2>
+            <span class="key-badge key-private">🚨 ALARM TRIGGERED</span>
+        </div>
+        <div class="formula-card" style="border-left-color: #ef4444;">
+            <div class="formula-title">Server Verification Evaluation</div>
+            <div class="formula-content" style="font-size: 0.9rem; color: #fca5a5;">
+                Original HMAC ≠ Server Recalculated HMAC<br>
+                Result: <strong style="color: #ef4444;">🚨 TAMPERING DETECTED</strong><br>
+                Server Action: <strong style="color: #ef4444;">VOTE REJECTED IMMEDIATELY</strong> (Never decrypted or tallied!)
+            </div>
+        </div>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">The server recalculated HMAC over the tampered payload. Because HMAC is keyed with a secret the attacker does not possess, the tag mismatched and the vote was discarded!</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Ensures forged or modified ballots never contaminate the election database or alter tally totals.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Tamper Detection & Non-Repudiation:</strong> Guarantees that corrupted votes cannot be successfully submitted.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 10: Final Vote Result -->
+    <div class="ese-screen" data-screen-index="9" style="display: none;">
+        <div class="card-header">
+            <h2 class="card-title" style="color: #10b981;">
+                <span>Screen 10:</span> Decrypted Ledger Tally & Audit Trail
+            </h2>
+            <span class="key-badge key-public">Final Election Result</span>
+        </div>
+        <p style="font-size: 0.95rem; color: #cbd5e1; margin-bottom: 16px;">
+            Legitimate, verified votes are decrypted using the server's RSA private key <code>(d, n)</code> and recorded in the SQLite ledger under a pseudonymous hash to protect voter anonymity.
+        </p>
+        <div class="educational-trio">
+            <div class="trio-card trio-what">
+                <div class="trio-title">WHAT HAPPENED?</div>
+                <div class="trio-desc">Only authenticated, untampered ballots were decrypted and included in the election tally. The audit log maintains a transparent record of all operations.</div>
+            </div>
+            <div class="trio-card trio-why">
+                <div class="trio-title">WHY IS IT REQUIRED?</div>
+                <div class="trio-desc">Provides verifiable, transparent election results while maintaining separation between voter identity and ballot choice.</div>
+            </div>
+            <div class="trio-card trio-security">
+                <div class="trio-title">WHICH SECURITY PROPERTY?</div>
+                <div class="trio-desc"><strong>Auditing & Election Integrity:</strong> Delivers provable, tamper-resistant election tally outcomes.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wizard Navigation Buttons & Dot Indicator -->
+    <div class="ese-nav-bar">
+        <button id="btnEsePrev" class="btn btn-secondary btn-sm" disabled>← Previous Step</button>
+
+        <div class="ese-indicator">
+            <span class="ese-dot active" title="Step 1"></span>
+            <span class="ese-dot" title="Step 2"></span>
+            <span class="ese-dot" title="Step 3"></span>
+            <span class="ese-dot" title="Step 4"></span>
+            <span class="ese-dot" title="Step 5"></span>
+            <span class="ese-dot" title="Step 6"></span>
+            <span class="ese-dot" title="Step 7"></span>
+            <span class="ese-dot" title="Step 8"></span>
+            <span class="ese-dot" title="Step 9"></span>
+            <span class="ese-dot" title="Step 10"></span>
+        </div>
+
+        <button id="btnEseNext" class="btn btn-primary btn-sm">Next Step →</button>
+    </div>
+</div>
+{% endblock %}

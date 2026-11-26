@@ -1,0 +1,208 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Vote Audit Ledger | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+        Ballot Verification Ledger
+      </div>
+      <h1>Vote Audit</h1>
+      <p class="subtitle" style="margin-bottom: 0;">
+        Cryptographic ledger of processed voting requests. Click any row to inspect the step-by-step verification timeline.
+      </p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('auditor_votes') }}" class="filter-chip {% if not status_filter %}active{% endif %}">
+        All Records ({{ records|length }})
+      </a>
+      <a href="{{ url_for('auditor_votes', status='ACCEPTED') }}" class="filter-chip {% if status_filter == 'ACCEPTED' %}active{% endif %}">
+        Accepted Only
+      </a>
+      <a href="{{ url_for('auditor_votes', status='REJECTED') }}" class="filter-chip {% if status_filter == 'REJECTED' %}active{% endif %}">
+        Rejected / Tampered
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Vote Records Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table" id="voteTable">
+      <thead>
+        <tr>
+          <th>Reference ID</th>
+          <th>Election</th>
+          <th>Timestamp</th>
+          <th>RSA Protection</th>
+          <th>HMAC Verification</th>
+          <th>Eligibility</th>
+          <th>Duplicate Check</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;">
+              {{ r.reference_id }}
+            </td>
+            <td style="font-size: 0.82rem; color: var(--text-muted);">
+              {{ r.election }}
+            </td>
+            <td style="font-size: 0.82rem; color: var(--text-dim);">
+              {{ r.timestamp }}
+            </td>
+            <td>
+              <span class="status-pill {% if r.rsa_status == 'PROTECTED' %}neutral{% else %}neutral{% endif %}" style="font-size: 0.72rem;">
+                {{ r.rsa_status }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill {% if r.hmac_status == 'VERIFIED' %}success{% elif r.hmac_status == 'FAILED' %}danger{% else %}neutral{% endif %}" style="font-size: 0.72rem;">
+                {{ r.hmac_status }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill {% if r.eligibility_check == 'ELIGIBLE' %}success{% elif r.eligibility_check == 'PROHIBITED' %}danger{% else %}neutral{% endif %}" style="font-size: 0.72rem;">
+                {{ r.eligibility_check }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill {% if r.duplicate_check == 'PASSED' %}success{% elif r.duplicate_check == 'BLOCKED' %}danger{% else %}neutral{% endif %}" style="font-size: 0.72rem;">
+                {{ r.duplicate_check }}
+              </span>
+            </td>
+            <td>
+              <span class="status-pill {% if r.status == 'ACCEPTED' %}success{% else %}danger{% endif %}" style="font-size: 0.75rem;">
+                {{ r.status }}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="inspectVote('{{ r.reference_id }}')">
+                Inspect
+              </button>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-dim);">
+              No vote records found matching the specified filter criteria.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Timeline Drawer / Modal -->
+<div class="timeline-drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+<div class="timeline-drawer" id="timelineDrawer">
+  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-light); padding-bottom: 14px; margin-bottom: 20px;">
+    <div>
+      <div style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase; color: var(--accent-blue);">Cryptographic Lifecycle</div>
+      <h3 style="margin: 0; font-size: 1.15rem;" id="drawerTitle">Vote Audit Timeline</h3>
+    </div>
+    <button class="btn btn-secondary btn-sm" onclick="closeDrawer()">&times; Close</button>
+  </div>
+
+  <div style="margin-bottom: 16px;">
+    <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Reference ID</div>
+    <div style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--text-main);" id="drawerRef">---</div>
+  </div>
+
+  <div id="drawerTimelineContent">
+    <div style="text-align: center; padding: 24px; color: var(--text-dim);">
+      Loading cryptographic timeline...
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function inspectVote(refId) {
+  const backdrop = document.getElementById('drawerBackdrop');
+  const drawer = document.getElementById('timelineDrawer');
+  const title = document.getElementById('drawerTitle');
+  const refDisplay = document.getElementById('drawerRef');
+  const content = document.getElementById('drawerTimelineContent');
+
+  backdrop.style.display = 'block';
+  drawer.style.display = 'block';
+  refDisplay.innerText = refId;
+  content.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--text-dim);">Querying server cryptographic ledger...</div>';
+
+  fetch(`/api/auditor/vote-detail/${encodeURIComponent(refId)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.found) {
+        content.innerHTML = '<div class="alert alert-warning">No detailed timeline recorded for this reference.</div>';
+        return;
+      }
+
+      let html = '<div style="display: flex; flex-direction: column; gap: 16px; margin-top: 12px;">';
+      
+      data.steps.forEach((step, idx) => {
+        let badgeClass = 'success';
+        if (step.status === 'FAILED' || step.status === 'ALERT' || step.status === 'REJECTED') {
+          badgeClass = 'danger';
+        } else if (step.status === 'RECEIVED' || step.status === 'COMPLETED') {
+          badgeClass = 'neutral';
+        }
+
+        html += `
+          <div style="padding: 14px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span style="font-weight: 700; font-size: 0.88rem; color: var(--text-main);">${step.title}</span>
+              <span class="status-pill ${badgeClass}" style="font-size: 0.72rem;">${step.status}</span>
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45;">
+              ${step.detail}
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+
+      if (data.logs && data.logs.length > 0) {
+        html += '<div style="margin-top: 24px;"><h4 style="font-size: 0.9rem; margin-bottom: 8px;">Associated Security Events</h4>';
+        data.logs.forEach(l => {
+          html += `
+            <div style="font-size: 0.78rem; font-family: var(--font-mono); padding: 8px; background: #0f172a; color: #e2e8f0; border-radius: 4px; margin-bottom: 6px;">
+              <div>[${l.timestamp}] ${l.event_name} - ${l.status}</div>
+              <div style="color: #94a3b8; font-family: var(--font-sans); margin-top: 3px;">${l.description}</div>
+            </div>
+          `;
+        });
+        html += '</div>';
+      }
+
+      content.innerHTML = html;
+    })
+    .catch(err => {
+      content.innerHTML = `<div class="alert alert-error">Error fetching audit timeline: ${err.message}</div>`;
+    });
+}
+
+function closeDrawer() {
+  document.getElementById('drawerBackdrop').style.display = 'none';
+  document.getElementById('timelineDrawer').style.display = 'none';
+}
+
+// Auto-open if query param ref is present
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ref = urlParams.get('ref');
+  if (ref) {
+    inspectVote(ref);
+  }
+});
+</script>
+{% endblock %}

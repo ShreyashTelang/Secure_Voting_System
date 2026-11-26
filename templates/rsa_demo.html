@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}RSA Cryptography Demonstration | CIS ESE Practical{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1>🔑 RSA Public Key Cryptography</h1>
+            <p style="color: var(--text-secondary);">
+                Asymmetric Cryptography Demonstration for ESE Practical Viva.
+            </p>
+        </div>
+        <div>
+            <span class="key-badge key-public">Asymmetric Cipher</span>
+            <span class="key-badge key-private" style="margin-left: 6px;">Confidentiality</span>
+        </div>
+    </div>
+</div>
+
+<!-- Notice on Small Educational Primes vs Real-World RSA -->
+<div class="step-card" style="border-color: var(--accent-blue); background: rgba(56, 189, 248, 0.06);">
+    <div class="step-header">
+        <span class="step-num-pill" style="background: var(--accent-blue); color: white;">IMPORTANT EDUCATIONAL NOTE</span>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">College ESE Viva Requirement</span>
+    </div>
+    <p style="font-size: 0.9rem; color: #cbd5e1;">
+        Real-world RSA utilizes prime numbers that are <strong>1024 to 2048 bits long</strong> (exceeding 300 to 600 decimal digits) to make modulus factorization computationally impossible with current classical hardware. 
+        For this educational demonstration, small primes (<code>p = {{ rsa.p }}, q = {{ rsa.q }}</code>) are intentionally used so that every intermediate multiplication, totient, greatest common divisor (GCD), and modular exponentiation step can be clearly calculated, verified, and defended during the viva!
+    </p>
+</div>
+
+<!-- 6 Step-by-Step RSA Key Generation Cards -->
+<div style="margin: 30px 0;">
+    <h2>Step-by-Step RSA Key Generation</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 20px;">
+        Follow each mathematical phase used to construct the public and private key pair.
+    </p>
+
+    <!-- Step 1: Prime Numbers -->
+    <div class="step-card">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill">Step 1</span>
+                <span class="step-title" style="margin-left: 8px;">Select Prime Numbers (p, q)</span>
+            </div>
+            <span class="key-badge key-public">Input Primes</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Chosen Prime Values</div>
+            <div class="formula-content">
+                p = {{ rsa.p }}<br>
+                q = {{ rsa.q }}
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            {{ key_steps.step_1.explanation }}
+        </p>
+    </div>
+
+    <!-- Step 2: Calculate n -->
+    <div class="step-card">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill">Step 2</span>
+                <span class="step-title" style="margin-left: 8px;">Calculate Modulus n = p × q</span>
+            </div>
+            <span class="key-badge key-public">Modulus n</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Arithmetic Calculation</div>
+            <div class="formula-content">
+                n = {{ rsa.p }} × {{ rsa.q }} = <span style="color: var(--accent-cyan);">{{ rsa.n }}</span>
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            <strong>Explanation:</strong> {{ key_steps.step_2.explanation }} 
+            Modulus bit length: <code>{{ key_steps.step_2.bit_length }} bits</code>.
+        </p>
+    </div>
+
+    <!-- Step 3: Euler's Totient phi(n) -->
+    <div class="step-card">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill">Step 3</span>
+                <span class="step-title" style="margin-left: 8px;">Calculate Euler's Totient φ(n)</span>
+            </div>
+            <span class="key-badge key-private">Totient φ(n)</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Euler's Product Formula</div>
+            <div class="formula-content">
+                φ(n) = (p - 1) × (q - 1)<br>
+                φ({{ rsa.n }}) = ({{ rsa.p }} - 1) × ({{ rsa.q }} - 1) = {{ rsa.p - 1 }} × {{ rsa.q - 1 }} = <span style="color: #38bdf8;">{{ rsa.phi }}</span>
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            <strong>Why Euler's Totient is required:</strong> {{ key_steps.step_3.explanation }}
+        </p>
+    </div>
+
+    <!-- Step 4: Public Exponent e -->
+    <div class="step-card">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill">Step 4</span>
+                <span class="step-title" style="margin-left: 8px;">Select Public Exponent e</span>
+            </div>
+            <span class="key-badge key-public">Public Exponent e</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Coprimality Condition: 1 < e < φ(n) and gcd(e, φ(n)) = 1</div>
+            <div class="formula-content">
+                e = <span style="color: var(--accent-cyan);">{{ rsa.e }}</span><br>
+                {{ key_steps.step_4.gcd_result }}
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            <strong>Explanation:</strong> {{ key_steps.step_4.explanation }}
+        </p>
+    </div>
+
+    <!-- Step 5: Private Exponent d -->
+    <div class="step-card">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill">Step 5</span>
+                <span class="step-title" style="margin-left: 8px;">Calculate Private Exponent d</span>
+            </div>
+            <span class="key-badge key-private">Private Exponent d</span>
+        </div>
+        <div class="formula-card">
+            <div class="formula-title">Modular Multiplicative Inverse: d ≡ e⁻¹ (mod φ(n))</div>
+            <div class="formula-content">
+                d = <span style="color: #f87171;">{{ rsa.d }}</span><br>
+                Verification: {{ key_steps.step_5.verification }}
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+            <strong>Explanation:</strong> {{ key_steps.step_5.explanation }} Computed using the <em>Extended Euclidean Algorithm</em>.
+        </p>
+    </div>
+
+    <!-- Step 6: Public vs Private Key Pair Display -->
+    <div class="step-card" style="border-color: #a855f7;">
+        <div class="step-header">
+            <div>
+                <span class="step-num-pill" style="background: #a855f7; color: white;">Step 6</span>
+                <span class="step-title" style="margin-left: 8px;">Display RSA Keys</span>
+            </div>
+            <span class="brand-badge">Key Distribution</span>
+        </div>
+
+        <div class="grid-2" style="margin-top: 14px;">
+            <div style="background: rgba(16, 185, 129, 0.08); border: 2px solid var(--accent-green); border-radius: 10px; padding: 18px;">
+                <h4 style="color: #6ee7b7; margin-bottom: 8px;">🌐 Public Key = (e, n)</h4>
+                <div class="code-box" style="color: #a7f3d0;">
+                    e = {{ rsa.e }}<br>
+                    n = {{ rsa.n }}<br>
+                    Key Pair: ({{ rsa.e }}, {{ rsa.n }})
+                </div>
+                <p style="font-size: 0.85rem; color: #a7f3d0;">
+                    Shared with all voters to encrypt ballots. Anyone can encrypt using this public key.
+                </p>
+            </div>
+
+            <div style="background: rgba(239, 68, 68, 0.08); border: 2px solid var(--accent-red); border-radius: 10px; padding: 18px;">
+                <h4 style="color: #fca5a5; margin-bottom: 8px;">🔒 Private Key = (d, n)</h4>
+                <div class="code-box" style="color: #fca5a5;">
+                    d = {{ rsa.d }}<br>
+                    n = {{ rsa.n }}<br>
+                    Key Pair: ({{ rsa.d }}, {{ rsa.n }})
+                </div>
+                <p style="font-size: 0.85rem; color: #fca5a5;">
+                    Must remain strictly confidential on the election server. Only the server can decrypt ballots.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interactive RSA Encryption & Decryption Sandbox -->
+<div class="card" style="margin: 30px 0;">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span>⚙️</span> Interactive RSA Educational Calculator
+        </h3>
+        <span class="brand-badge">Direct Arithmetic Trace</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 20px;">
+        Test the mathematical operations directly. Enter an educational message (e.g. number <code>42</code>) to compute <code>C = M<sup>e</sup> mod n</code> and reverse it via <code>M = C<sup>d</sup> mod n</code>.
+    </p>
+
+    <div class="grid-2">
+        <!-- Encryption Sandbox -->
+        <div class="step-card">
+            <h4 style="color: var(--accent-cyan); margin-bottom: 12px;">RSA Encryption: C = M<sup>e</sup> mod n</h4>
+            <div class="form-group">
+                <label class="form-label" for="rsaNumInput">Plaintext Number (M &lt; {{ rsa.n }}):</label>
+                <input type="number" id="rsaNumInput" class="form-control" value="42" min="1" max="{{ rsa.n - 1 }}">
+            </div>
+            <button id="btnEncryptNumber" class="btn btn-primary btn-sm">Encrypt: C = M^{{ rsa.e }} mod {{ rsa.n }}</button>
+            <div id="rsaEncNumResult" style="margin-top: 14px;">
+                <div class="code-box">
+                    <strong>Initial Sample Calculation:</strong><br>
+                    Plaintext M = {{ sample_enc.plaintext_m }}<br>
+                    Formula: {{ sample_enc.formula }}<br>
+                    Calculation: {{ sample_enc.calculation }}<br>
+                    <strong>Ciphertext C = {{ sample_enc.ciphertext_c }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decryption Sandbox -->
+        <div class="step-card">
+            <h4 style="color: #f87171; margin-bottom: 12px;">RSA Decryption: M = C<sup>d</sup> mod n</h4>
+            <div class="form-group">
+                <label class="form-label" for="rsaCipherInput">Ciphertext (C):</label>
+                <input type="number" id="rsaCipherInput" class="form-control" value="{{ sample_enc.ciphertext_c }}">
+            </div>
+            <button id="btnDecryptNumber" class="btn btn-secondary btn-sm">Decrypt: M = C^{{ rsa.d }} mod {{ rsa.n }}</button>
+            <div id="rsaDecNumResult" style="margin-top: 14px;">
+                <div class="code-box">
+                    <strong>Initial Sample Calculation:</strong><br>
+                    Ciphertext C = {{ sample_dec.ciphertext_c }}<br>
+                    Formula: {{ sample_dec.formula }}<br>
+                    Calculation: {{ sample_dec.calculation }}<br>
+                    <strong>Recovered Plaintext M = {{ sample_dec.recovered_plaintext_m }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 7: Security Explanation & Hybrid Cryptosystem Note -->
+<div class="card" style="margin: 30px 0; border-color: var(--accent-blue);">
+    <div class="card-header">
+        <h3 class="card-title" style="color: var(--accent-blue);">
+            <span>🛡️</span> Section 7: How RSA Secures Our Voting System
+        </h3>
+        <span class="key-badge key-public">Confidentiality Analysis</span>
+    </div>
+
+    <div style="font-size: 0.95rem; color: #cbd5e1; line-height: 1.7;">
+        <p style="margin-bottom: 12px;">
+            In our electronic voting system, RSA provides <strong>confidentiality</strong> against eavesdroppers and network snoopers:
+        </p>
+        <ul style="margin-left: 24px; margin-bottom: 16px;">
+            <li><strong>Asymmetric Security:</strong> Voters can encrypt their ballots with the public key <code>(e, n)</code> without needing to share or expose the private key <code>(d, n)</code>.</li>
+            <li><strong>Protection of Vote Choices:</strong> An adversary monitoring network traffic sees only the cipher integer sequence <code>C</code>, which is mathematically indistinguishable from random noise without <code>d</code>.</li>
+            <li><strong>Computational Hardness:</strong> Breaking RSA requires finding prime factors <code>p</code> and <code>q</code> from <code>n</code>. For large bit-lengths, no known polynomial-time classical factoring algorithm exists.</li>
+        </ul>
+
+        <div class="step-card" style="border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.08); margin-top: 14px;">
+            <h4 style="color: #fbbf24; margin-bottom: 6px;">⚠️ Important Practical Distinction: RSA vs. Hybrid Encryption</h4>
+            <p style="font-size: 0.88rem; color: #fde68a;">
+                RSA is computationally expensive because modular exponentiation of very large integers involves intensive CPU operations. Therefore, <strong>RSA alone is not standard for encrypting bulk data (such as large files or streams)</strong>. In production enterprise voting systems, a <strong>Hybrid Cryptosystem</strong> is utilized:
+                <br>
+                • <strong>RSA (Asymmetric):</strong> Securely encrypts a random, lightweight symmetric session key (e.g. AES-256 key).<br>
+                • <strong>AES (Symmetric):</strong> Encrypts the actual bulk voting payload with high performance.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

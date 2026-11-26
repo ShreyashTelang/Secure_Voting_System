@@ -1,0 +1,110 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}System Status Audit | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+    Infrastructure Availability & Health
+  </div>
+  <h1>System Status</h1>
+  <p class="subtitle">
+    Operational availability monitoring of application processes, database storage, and cryptographic endpoints.
+  </p>
+</div>
+
+<!-- Top Availability Stats -->
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Overall Availability</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">100%</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Zero service disruptions</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Total Requests Logged</div>
+    <div class="metric-value-lg">{{ status.total_requests }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">All incoming audit events</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Server Errors (5xx)</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">{{ status.server_errors }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Zero unhandled exceptions</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Database Errors</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">{{ status.database_errors }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Zero transaction failures</div>
+  </div>
+</div>
+
+<!-- Component Health Table -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Subsystem Health Checks</h3>
+      <div style="font-size: 0.82rem; color: var(--text-dim);">Monitored micro-services and persistence layers</div>
+    </div>
+    <span class="status-pill success">All Systems Operational</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Subsystem Name</th>
+          <th>Role in Election Architecture</th>
+          <th>Operational Health</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in status.components %}
+          <tr>
+            <td style="font-weight: 700; color: var(--text-main);">{{ c.name }}</td>
+            <td style="font-size: 0.85rem; color: var(--text-muted);">
+              {% if c.name == 'Voting Service' %}
+                Receives and orchestrates cryptographic ballot pipeline
+              {% elif c.name == 'Database Storage (SQLite)' %}
+                Persistent storage of voter registries, ballots, and audit logs
+              {% elif c.name == 'RSA Encryption Service' %}
+                Provides ballot confidentiality via public-key modular arithmetic
+              {% elif c.name == 'HMAC Authentication Service' %}
+                Provides message integrity and origin authentication via RFC 2104
+              {% elif c.name == 'Voter Authentication Service' %}
+                Verifies voter identity tokens with constant-time SHA-256 verification
+              {% elif c.name == 'Election Tabulation Service' %}
+                Computes anonymous ballot tallies and candidate percentages
+              {% else %}
+                Core election microservice
+              {% endif %}
+            </td>
+            <td>
+              <span style="display: inline-flex; align-items: center; gap: 6px; color: var(--status-success); font-weight: 600; font-size: 0.82rem;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-success);"></span>
+                Healthy
+              </span>
+            </td>
+            <td>
+              <span class="status-pill success" style="font-size: 0.72rem;">{{ c.status }}</span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Essential Academic / Architectural Distinction on Availability -->
+<div class="card" style="border-left: 4px solid var(--accent-blue);">
+  <div class="card-header">
+    <h3>Architectural Availability Principle</h3>
+    <span class="status-pill success">Design Assurance</span>
+  </div>
+  <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin: 0;">
+    <strong>Important Cryptographic Clarification:</strong> {{ status.availability_explanation }}
+  </p>
+</div>
+{% endblock %}

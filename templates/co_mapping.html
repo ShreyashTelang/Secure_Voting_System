@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Course Outcome (CO) Mapping | CIS Laboratory{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h1>📊 Course Outcome (CO) Mapping Matrix</h1>
+    <p style="color: var(--text-secondary);">
+        Direct mapping of project features and viva demonstrations to the 
+        <strong>Cryptography and Information Security (CIS)</strong> laboratory course outcomes.
+    </p>
+</div>
+
+<!-- CO Matrix Table -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span>🎓</span> CIS Laboratory Syllabus Alignment Matrix
+        </h3>
+        <span class="brand-badge">Autonomous / University Syllabus</span>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="crypto-table">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">CO ID</th>
+                    <th>Course Outcome Statement</th>
+                    <th>Blooms Level</th>
+                    <th>Project Implementation Feature</th>
+                    <th>Practical Demonstration in System</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>CO1</strong></td>
+                    <td>
+                        Understand mathematical foundations of modern cryptography, including modular arithmetic, prime factorisation, and Euler's totient theorem.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #38bdf8; color: #38bdf8;">Understand (L2)</span></td>
+                    <td>
+                        <code>crypto/rsa_demo.py</code>:<br>
+                        Modular exponentiation, Euclidean GCD, Extended Euclidean algorithm for modular inverse.
+                    </td>
+                    <td>
+                        <strong>RSA Demo Page (Steps 1–5):</strong><br>
+                        Displays live arithmetic for <code>p, q, n, φ(n), e, d</code> and verification <code>d × e ≡ 1 mod φ(n)</code>.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>CO2</strong></td>
+                    <td>
+                        Apply asymmetric public-key cryptosystems (RSA) to achieve confidentiality and secure key distribution in distributed systems.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #10b981; color: #10b981;">Apply (L3)</span></td>
+                    <td>
+                        <code>crypto/key_manager.py</code>:<br>
+                        Server election keypair generation, public key distribution, and voter ballot encryption <code>C = M<sup>e</sup> mod n</code>.
+                    </td>
+                    <td>
+                        <strong>Voting Booth & RSA Calculator:</strong><br>
+                        Interactive encryption of candidate selection and decryption by server private key.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>CO3</strong></td>
+                    <td>
+                        Implement cryptographic hash functions and Message Authentication Codes (HMAC) to ensure message integrity and sender authentication.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #10b981; color: #10b981;">Apply (L3)</span></td>
+                    <td>
+                        <code>crypto/hmac_demo.py</code>:<br>
+                        RFC 2104 compliant HMAC-SHA256 with inner (0x36) and outer (0x5C) padding masks, and constant-time verification.
+                    </td>
+                    <td>
+                        <strong>HMAC Demo Page:</strong><br>
+                        Detailed step-by-step breakdown of <code>ipad/opad</code>, 256-bit tag computation, and <code>compare_digest()</code>.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>CO4</strong></td>
+                    <td>
+                        Analyze network security protocols against active attacks including eavesdropping, packet tampering, and Man-in-the-Middle (MITM) manipulations.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #f59e0b; color: #f59e0b;">Analyze (L4)</span></td>
+                    <td>
+                        <code>app.py & crypto/hmac_demo.py</code>:<br>
+                        Active attack simulator modifying candidate payload without updating the HMAC tag.
+                    </td>
+                    <td>
+                        <strong>Security Analysis & Vote Tamper Button:</strong><br>
+                        Visually demonstrates server detecting mismatched HMAC and generating <code>TAMPERING_DETECTED</code> alert.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>CO5</strong></td>
+                    <td>
+                        Design and integrate multi-tier secure application architectures combining multiple cryptographic primitives into a coherent system.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #a855f7; color: #a855f7;">Create (L6)</span></td>
+                    <td>
+                        Full Flask + SQLite Application:<br>
+                        Decoupled password hashing (salted SHA-256) + RSA ballot encryption + HMAC packet authentication.
+                    </td>
+                    <td>
+                        <strong>Complete Voting Workflow:</strong><br>
+                        Voter registration ➔ Authentication ➔ Ballot Selection ➔ Dual Encryption ➔ Server Verification ➔ Ledger Recording.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>CO6</strong></td>
+                    <td>
+                        Evaluate cryptographic security properties, analyze trade-offs, and defend technical decisions during practical examinations and viva voce.
+                    </td>
+                    <td><span class="brand-badge" style="border-color: #ec4899; color: #ec4899;">Evaluate (L5)</span></td>
+                    <td>
+                        Educational Disclaimers & Viva Module:<br>
+                        Documentation of real-world limitations (homomorphic tallying, HSMs, E2E-V) and 28 viva questions.
+                    </td>
+                    <td>
+                        <strong>ESE 10-Screen Demo Mode & Viva Guide:</strong><br>
+                        Guides student through defense of "What happened?", "Why is it required?", and "Which security property?".
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

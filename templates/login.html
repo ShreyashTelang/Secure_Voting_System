@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | SecureVote{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 40px auto 60px auto;">
+  <div class="card">
+    <div style="margin-bottom: 20px;">
+      <h2>Voter Sign In</h2>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 4px;">
+        Authenticate with your registered voter credentials.
+      </p>
+    </div>
+
+    <form method="POST" action="{{ url_for('login', next=request.args.get('next', '')) }}">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. voter1" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+        Sign In & Access Ballot &rarr;
+      </button>
+    </form>
+
+    <!-- Evaluation Credentials Autofill -->
+    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 0.84rem; color: var(--text-muted);">
+      <div style="font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Demonstration Accounts:</div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('username').value='voter1'; document.getElementById('password').value='VoterPass123!';">
+          voter1 (Sarah Jenkins)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('username').value='voter2'; document.getElementById('password').value='VoterPass123!';">
+          voter2 (Michael Torres)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('username').value='auditor'; document.getElementById('password').value='AuditPass123!';">
+          auditor (Dr. Vance)
+        </button>
+      </div>
+      <div style="margin-top: 16px;">
+        Need an account? <a href="{{ url_for('register') }}">Register new voter</a>.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

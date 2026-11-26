@@ -1,0 +1,118 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Security Logs Audit | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+    System Audit Trail
+  </div>
+  <h1>Security Logs</h1>
+  <p class="subtitle">
+    Chronological, immutable audit records of all cryptographic operations, voter authentications, and security events.
+  </p>
+</div>
+
+<!-- Filter Toolbar -->
+<div class="card" style="padding: 16px; margin-bottom: 20px;">
+  <form method="GET" action="{{ url_for('auditor_security_logs') }}" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 2; min-width: 200px;">
+      <label class="form-label" style="font-size: 0.78rem;">Search Query (Description, Actor ID, Reference)</label>
+      <input type="text" name="q" value="{{ search_query or '' }}" placeholder="Filter by keyword or reference ID..." class="form-control" style="font-size: 0.85rem; padding: 7px 10px;">
+    </div>
+
+    <div style="flex: 1; min-width: 160px;">
+      <label class="form-label" style="font-size: 0.78rem;">Event Name</label>
+      <select name="event" class="form-control" style="font-size: 0.85rem; padding: 7px 10px;">
+        <option value="">All Events</option>
+        <option value="VOTE_ACCEPTED" {% if event_filter == 'VOTE_ACCEPTED' %}selected{% endif %}>VOTE_ACCEPTED</option>
+        <option value="INTEGRITY_VIOLATION_TAMPERING_DETECTED" {% if event_filter == 'INTEGRITY_VIOLATION_TAMPERING_DETECTED' %}selected{% endif %}>INTEGRITY_VIOLATION_TAMPERING_DETECTED</option>
+        <option value="DUPLICATE_VOTE_BLOCKED" {% if event_filter == 'DUPLICATE_VOTE_BLOCKED' %}selected{% endif %}>DUPLICATE_VOTE_BLOCKED</option>
+        <option value="AUDITOR_VOTE_BLOCKED" {% if event_filter == 'AUDITOR_VOTE_BLOCKED' %}selected{% endif %}>AUDITOR_VOTE_BLOCKED</option>
+        <option value="VOTER_AUTHENTICATED" {% if event_filter == 'VOTER_AUTHENTICATED' %}selected{% endif %}>VOTER_AUTHENTICATED</option>
+        <option value="AUTHENTICATION_FAILED" {% if event_filter == 'AUTHENTICATION_FAILED' %}selected{% endif %}>AUTHENTICATION_FAILED</option>
+        <option value="ELECTION_INITIALIZED" {% if event_filter == 'ELECTION_INITIALIZED' %}selected{% endif %}>ELECTION_INITIALIZED</option>
+      </select>
+    </div>
+
+    <div style="flex: 1; min-width: 140px;">
+      <label class="form-label" style="font-size: 0.78rem;">Outcome Status</label>
+      <select name="status" class="form-control" style="font-size: 0.85rem; padding: 7px 10px;">
+        <option value="">All Outcomes</option>
+        <option value="SUCCESS" {% if status_filter == 'SUCCESS' %}selected{% endif %}>SUCCESS</option>
+        <option value="ACCEPTED" {% if status_filter == 'ACCEPTED' %}selected{% endif %}>ACCEPTED</option>
+        <option value="ALERT" {% if status_filter == 'ALERT' %}selected{% endif %}>ALERT</option>
+        <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>FAILED</option>
+        <option value="REJECTED" {% if status_filter == 'REJECTED' %}selected{% endif %}>REJECTED</option>
+        <option value="BLOCKED" {% if status_filter == 'BLOCKED' %}selected{% endif %}>BLOCKED</option>
+      </select>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-primary btn-sm" style="padding: 8px 16px;">Filter</button>
+      <a href="{{ url_for('auditor_security_logs') }}" class="btn btn-secondary btn-sm" style="padding: 8px 14px;">Reset</a>
+    </div>
+  </form>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Event Name</th>
+          <th>Actor ID</th>
+          <th>Reference ID</th>
+          <th>Description</th>
+          <th>HMAC Comparison</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for l in logs %}
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem; font-weight: 600; color: var(--accent-blue);">#{{ loop.index }}</td>
+            <td style="font-size: 0.8rem; color: var(--text-dim); white-space: nowrap;">{{ l.timestamp }}</td>
+            <td style="font-weight: 600; font-size: 0.82rem;">{{ l.event_name }}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem;">{{ l.actor_id or '—' }}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem;">
+              {% if l.request_reference %}
+                <a href="{{ url_for('auditor_votes') }}?ref={{ l.request_reference }}" style="font-weight: 600;">
+                  {{ l.request_reference }}
+                </a>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 260px;">
+              {{ l.description }}
+            </td>
+            <td style="font-size: 0.75rem; font-family: var(--font-mono);">
+              {% if l.received_tag or l.calculated_tag %}
+                <div title="Received Tag" style="color: var(--status-danger);">Recv: {{ l.received_tag[:12] if l.received_tag else '—' }}...</div>
+                <div title="Calculated Tag" style="color: var(--status-success);">Calc: {{ l.calculated_tag[:12] if l.calculated_tag else '—' }}...</div>
+              {% else %}
+                <span style="color: var(--text-dim);">—</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="status-pill {% if l.status in ['SUCCESS', 'ACCEPTED'] %}success{% elif l.status in ['FAILED', 'ALERT', 'REJECTED'] %}danger{% else %}warning{% endif %}" style="font-size: 0.72rem;">
+                {{ l.status }}
+              </span>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-dim);">
+              No security events found matching the specified filters.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

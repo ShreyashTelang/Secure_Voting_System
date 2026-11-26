@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}SecureVote | Cryptographically Protected Electronic Voting{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="{{ url_for('index') }}" class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--storm-dark);">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>SecureVote</span>
+        <span class="brand-badge">RSA + HMAC</span>
+      </a>
+
+      <ul class="nav-menu">
+        <li><a href="{{ url_for('index') }}" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a></li>
+        <li><a href="{{ url_for('election_view') }}" class="nav-link {% if request.path == '/election' %}active{% endif %}">Election</a></li>
+        {% if is_authenticated and not current_voter.has_voted and not is_auditor %}
+          <li><a href="{{ url_for('election_view') }}" class="nav-link" style="color: var(--storm-dark); font-weight: 600;">Vote</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('security_overview') }}" class="nav-link {% if '/security' in request.path %}active{% endif %}">Security</a></li>
+        <li><a href="{{ url_for('results_view') }}" class="nav-link {% if request.path == '/results' %}active{% endif %}">Results</a></li>
+        {% if is_auditor %}
+          <li><a href="{{ url_for('auditor_dashboard') }}" class="nav-link" style="color: var(--storm-dark); font-weight: 600;">Auditor Portal</a></li>
+        {% endif %}
+      </ul>
+
+      <div class="nav-actions">
+        {% if is_authenticated %}
+          <div style="font-size: 0.88rem; text-align: right; line-height: 1.2;">
+            <div style="font-weight: 600; color: var(--storm-dark);">{{ current_voter.full_name }} {% if is_auditor %}<span class="brand-badge" style="background:var(--storm-dark); color:#ffffff; font-size: 0.68rem; margin-left: 4px;">Auditor</span>{% endif %}</div>
+            <span style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--storm-steel);">{{ current_voter.voter_id }}</span>
+          </div>
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm">Sign Out</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">Sign In</a>
+          <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Alerts -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="max-width: 1160px; margin: 16px auto 0 auto; padding: 0 24px; width: 100%;">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content -->
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <strong>SecureVote</strong> &mdash; A cryptographically protected electronic voting system.
+      </div>
+      <div style="display: flex; gap: 18px; align-items: center;">
+        <span class="status-pill success">Cryptographic Engine Active</span>
+        <span>RSA-3233 (Demo) / RSA-2048</span>
+        <span>HMAC-SHA256 (RFC 2104)</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

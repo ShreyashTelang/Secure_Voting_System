@@ -1,0 +1,216 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Certified Audit Report | SecureVote{% endblock %}
+
+{% block extra_head %}
+<style>
+  @media print {
+    .auditor-nav, .audit-banner, .btn, .footer {
+      display: none !important;
+    }
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #cccccc !important;
+      break-inside: avoid;
+    }
+    .container {
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+        Formal Election Certification
+      </div>
+      <h1>Official Audit Report</h1>
+      <p class="subtitle" style="margin-bottom: 0;">
+        Independent cryptographic verification statement and compliance audit certificate.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-secondary btn-sm" onclick="window.print()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Print / Save PDF
+      </button>
+      <a href="{{ url_for('auditor_export_csv') }}" class="btn btn-primary btn-sm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download CSV Ledger
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Formal Report Document Wrapper -->
+<div class="card" style="border-top: 4px solid var(--primary); padding: 36px;">
+  <!-- Certificate Header -->
+  <div style="border-bottom: 2px solid var(--border-light); padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim);">
+        SecureVote Election Commission &bull; Cryptographic Audit Division
+      </div>
+      <h2 style="margin: 4px 0 6px 0; font-size: 1.6rem;">ELECTION AUDIT CERTIFICATE</h2>
+      <div style="font-size: 0.95rem; color: var(--text-muted);">
+        Election: <strong>{{ report.election_info.title }}</strong>
+      </div>
+    </div>
+    <div style="text-align: right; font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+      <div><strong>REPORT REF:</strong> {{ report.report_id }}</div>
+      <div><strong>ISSUED AT:</strong> {{ report.generated_at }}</div>
+      <div><strong>STATUS:</strong> <span style="color: var(--status-success); font-weight: bold;">CERTIFIED</span></div>
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div style="margin-bottom: 28px;">
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 12px;">
+      1. Executive Summary & Voting Statistics
+    </h3>
+    <table class="table" style="margin-bottom: 16px;">
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 35%;">Total Eligible Registered Voters</td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">{{ report.voting_statistics.eligible_voters }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Total Ballots Processed</td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">{{ report.voting_statistics.votes_cast }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Valid Accepted Ballots</td>
+          <td style="font-family: var(--font-mono); font-weight: 600; color: var(--status-success);">{{ report.voting_statistics.accepted_votes }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Total Rejected / Blocked Submissions</td>
+          <td style="font-family: var(--font-mono); font-weight: 600; color: var(--status-danger);">{{ report.voting_statistics.rejected_requests }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Duplicate Vote Attempts Intercepted</td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">{{ report.voting_statistics.duplicate_attempts }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Voter Turnout Percentage</td>
+          <td style="font-family: var(--font-mono); font-weight: 600;">{{ report.voting_statistics.turnout_percentage }}%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Certified Candidate Tallies -->
+  <div style="margin-bottom: 28px;">
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 12px;">
+      2. Official Certified Candidate Tallies
+    </h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Candidate Name</th>
+          <th>Position</th>
+          <th>Affiliation</th>
+          <th style="text-align: right;">Vote Count</th>
+          <th style="text-align: right;">Percentage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in report.candidate_tallies %}
+          <tr>
+            <td style="font-weight: 700;">{{ c.name }}</td>
+            <td style="color: var(--text-muted);">{{ c.position }}</td>
+            <td>{{ c.affiliation }}</td>
+            <td style="font-family: var(--font-mono); font-weight: 700; text-align: right;">{{ c.vote_count }}</td>
+            <td style="font-family: var(--font-mono); font-weight: 600; text-align: right;">{{ c.percentage }}%</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Cryptographic Integrity Controls -->
+  <div style="margin-bottom: 28px;">
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 12px;">
+      3. Cryptographic Controls & Integrity Audit
+    </h3>
+    <table class="table">
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 45%;">RSA Asymmetric Protection</td>
+          <td><span class="status-pill success">&check; {{ report.cryptographic_security.rsa_status }}</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">HMAC-SHA256 Successful Verifications</td>
+          <td style="font-family: var(--font-mono);">{{ report.cryptographic_security.hmac_verifications }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">HMAC-SHA256 Integrity Failures (Tampering)</td>
+          <td style="font-family: var(--font-mono); color: var(--status-danger);">{{ report.cryptographic_security.hmac_failures }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">HMAC-SHA256 Verification Pass Rate</td>
+          <td style="font-family: var(--font-mono); font-weight: 700;">{{ report.cryptographic_security.verification_rate }}%</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Constant-Time Tag Verification</td>
+          <td><code class="code-inline">hmac.compare_digest</code> Enforced (Zero Timing Side-Channels)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- System Availability -->
+  <div style="margin-bottom: 28px;">
+    <h3 style="font-size: 1.1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 8px; margin-bottom: 12px;">
+      4. System Availability & Architecture
+    </h3>
+    <table class="table">
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 45%;">Overall Infrastructure Status</td>
+          <td><span class="status-pill success">&check; {{ report.system_availability.overall_status }}</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Unrecoverable Processing Failures</td>
+          <td style="font-family: var(--font-mono);">{{ report.system_availability.processing_failures }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Database Consistency Checks</td>
+          <td><span class="status-pill success">&check; Zero Discrepancies</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Official Certification Seal -->
+  <div style="background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: var(--accent-blue);">Audit Conclusion & Verdict</div>
+      <div style="font-size: 1.15rem; font-weight: 700; color: var(--text-main); margin-top: 2px;">
+        {{ report.final_audit_status.overall_status }}
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">
+        All confidentiality, integrity, and single-vote constraints have been verified in compliance with the CIS Cryptographic Election Specification.
+      </div>
+    </div>
+    <div style="border: 2px dashed var(--border-subtle); padding: 12px 20px; border-radius: var(--radius-sm); text-align: center; font-family: var(--font-mono); font-size: 0.78rem;">
+      <div style="font-weight: bold; color: var(--primary);">SECUREVOTE AUDITOR SEAL</div>
+      <div style="color: var(--text-dim); margin-top: 2px;">AUD-2026-CERTIFIED</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

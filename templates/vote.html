@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Secure Voting Booth | RSA & HMAC-SHA256{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1>🗳️ Secure Voting Booth</h1>
+            <p style="color: var(--text-secondary);">
+                Voter: <strong>{{ user.username }}</strong> ({{ user.voter_id }}) | HMAC Secret: <code>{{ user.hmac_secret }}</code>
+            </p>
+        </div>
+        <div>
+            <span class="key-badge key-public">RSA Public Key: (e={{ pub_key.e }}, n={{ pub_key.n }})</span>
+        </div>
+    </div>
+</div>
+
+<!-- Step 1: Candidate Selection -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span class="step-num-pill">Step 1</span> Select Your Candidate
+        </h3>
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">Click a card to select</span>
+    </div>
+
+    <input type="hidden" id="selectedCandidateId" value="">
+
+    <div class="grid-4">
+        {% for cand in candidates %}
+            <div class="candidate-card" data-candidate-id="{{ cand.id }}" data-candidate-name="{{ cand.name }}">
+                <div class="candidate-symbol">{{ cand.symbol }}</div>
+                <h4 class="candidate-name">{{ cand.name }}</h4>
+                <div class="candidate-party">{{ cand.party }}</div>
+                <p class="candidate-manifesto">{{ cand.manifesto }}</p>
+                <div style="margin-top: 14px; text-align: center;">
+                    <span class="btn btn-secondary btn-sm" style="pointer-events: none;">Select</span>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Step 2: Live Cryptographic Transformation Pipeline -->
+<div id="liveCryptoPipeline" class="card" style="display: none; margin-bottom: 24px; border-color: var(--accent-cyan);">
+    <div class="card-header">
+        <h3 class="card-title">
+            <span class="step-num-pill">Step 2</span> Live Cryptographic Pipeline Visualizer
+        </h3>
+        <span class="brand-badge">Client-Side Encryption & Tagging</span>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 14px;">
+        As you select candidate <strong><span id="previewCandName" style="color: var(--accent-cyan);"></span></strong>, the browser executes the exact dual-layer cryptographic transformation before dispatching over the network.
+    </p>
+
+    <div class="grid-3">
+        <!-- 1. Plaintext Ballot -->
+        <div class="step-card">
+            <div class="step-header">
+                <span class="step-title">1. Plaintext Ballot (M)</span>
+            </div>
+            <div class="code-box" id="pipelinePlaintext" style="color: #f0f4fc;">
+                Selecting candidate...
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">
+                Unencrypted choice: <code>ID:candidate_id|NAME:candidate_name</code>
+            </p>
+        </div>
+
+        <!-- 2. RSA Ciphertext -->
+        <div class="step-card" style="border-color: var(--accent-blue);">
+            <div class="step-header">
+                <span class="step-title" style="color: var(--accent-blue);">2. RSA Encrypted (C)</span>
+            </div>
+            <div class="code-box" id="pipelineEncrypted" style="color: #38bdf8; word-break: break-all;">
+                Calculating C = M<sup>e</sup> mod n...
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">
+                Encrypted with Server Public Key <code>(e={{ pub_key.e }}, n={{ pub_key.n }})</code>. Confidential.
+            </p>
+        </div>
+
+        <!-- 3. HMAC-SHA256 Tag -->
+        <div class="step-card" style="border-color: var(--accent-cyan);">
+            <div class="step-header">
+                <span class="step-title" style="color: var(--accent-cyan);">3. HMAC-SHA256 Tag</span>
+            </div>
+            <div class="code-box" id="pipelineHmac" style="color: var(--accent-cyan); word-break: break-all; font-size: 0.8rem;">
+                Computing HMAC...
+            </div>
+            <p style="font-size: 0.78rem; color: var(--text-muted);">
+                RFC 2104 inner/outer pad with secret <code>{{ user.hmac_secret }}</code>. Integrity.
+            </p>
+        </div>
+    </div>
+
+    <!-- Step 3: Choose Submission Mode (Normal vs Tamper Attack) -->
+    <div style="margin-top: 20px; padding: 20px; background: #0c1222; border-radius: 10px; border: 1px solid var(--border-color);">
+        <h4 style="color: #ffffff; margin-bottom: 10px;">Step 3: Choose Demonstration Submission Mode</h4>
+        <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px;">
+            During your ESE practical exam, you can demonstrate both the successful authenticated workflow and the active Man-in-the-Middle tampering detection.
+        </p>
+
+        <div style="display: flex; gap: 14px; flex-wrap: wrap;">
+            <!-- Normal Submission -->
+            <button id="btnSubmitNormal" class="btn btn-primary" style="flex: 1; min-width: 260px; padding: 14px 20px;">
+                <span>🟢</span> Submit Vote Securely (Normal Workflow)
+            </button>
+
+            <!-- Tampering Simulation -->
+            <button id="btnSubmitTamper" class="btn btn-danger" style="flex: 1; min-width: 260px; padding: 14px 20px;">
+                <span>🚨</span> Simulate Vote Tampering (MITM Attack)
+            </button>
+        </div>
+
+        <div style="margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">
+            • <strong>Normal Workflow:</strong> Server recomputes HMAC ➔ Tag matches ➔ RSA Decryption ➔ Vote accepted.<br>
+            • <strong>Tamper Simulation:</strong> Adversary intercepts in transit and alters Candidate A ➔ Candidate B without updating HMAC ➔ Server detects mismatch ➔ <strong>REJECTS VOTE</strong>!
+        </div>
+    </div>
+</div>
+
+<!-- Dynamic Submission Response Box -->
+<div id="submissionStatusBox" style="display: none; margin-top: 20px;"></div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}RSA Cryptography | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <span class="status-pill success" style="margin-bottom: 8px;">● Asymmetric Cryptosystem</span>
+  <h1>RSA Public-Key Cryptography</h1>
+  <p class="subtitle" style="margin-bottom: 0;">
+    Mathematical derivation and modular arithmetic for ballot confidentiality and key protection.
+  </p>
+</div>
+
+<!-- Security Sub-Navigation -->
+<div class="sub-nav">
+  <a href="{{ url_for('security_overview') }}" class="sub-nav-item">Overview (CIA Triad)</a>
+  <a href="{{ url_for('security_rsa') }}" class="sub-nav-item active">RSA Cryptography</a>
+  <a href="{{ url_for('security_hmac') }}" class="sub-nav-item">HMAC-SHA256</a>
+  <a href="{{ url_for('security_integrity_demo') }}" class="sub-nav-item">Tampering Simulation</a>
+  <a href="{{ url_for('security_availability') }}" class="sub-nav-item">System Availability</a>
+</div>
+
+<!-- Section 1: RSA Key Generation Parameters -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">RSA Key Derivation</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Calculated using educational parameters p=61, q=53 (Modulus n = 3233)
+      </div>
+    </div>
+    <span class="status-pill neutral">Active Keypair</span>
+  </div>
+
+  <div class="grid-2" style="margin-bottom: 20px;">
+    <!-- Public Key -->
+    <div style="border: 1px solid var(--border-light); border-left: 4px solid var(--status-success); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-weight: 700; color: var(--text-main);">PUBLIC KEY (e, n)</span>
+        <span class="status-pill success">PUBLIC &bull; DISTRIBUTED</span>
+      </div>
+      <div class="code-block" style="font-size: 0.9rem;">
+        <div>e (Public Exponent) = <strong>{{ params.e }}</strong></div>
+        <div>n (Modulus)         = <strong>{{ params.n }}</strong> ({{ params.bit_length }} bits)</div>
+        <div>Pair Representation = <strong>({{ params.e }}, {{ params.n }})</strong></div>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-dim); margin-top: 8px;">
+        Published to all voters. Anyone can encrypt a ballot using this public key.
+      </p>
+    </div>
+
+    <!-- Private Key -->
+    <div style="border: 1px solid var(--border-light); border-left: 4px solid var(--status-danger); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-weight: 700; color: var(--text-main);">PRIVATE KEY (d, n)</span>
+        <span class="status-pill danger">PRIVATE &bull; SERVER SECURED</span>
+      </div>
+      <div class="code-block" style="font-size: 0.9rem;">
+        <div>d (Private Exponent) = <strong>{{ params.d }}</strong></div>
+        <div>n (Modulus)          = <strong>{{ params.n }}</strong></div>
+        <div>Pair Representation  = <strong>({{ params.d }}, {{ params.n }})</strong></div>
+      </div>
+      <p style="font-size: 0.84rem; color: var(--text-dim); margin-top: 8px;">
+        Kept strictly secret on the election server. Required to reverse the transformation and decrypt ballots.
+      </p>
+    </div>
+  </div>
+
+  <!-- Mathematical Derivation Summary -->
+  <div style="font-size: 0.88rem; color: var(--text-muted); background: var(--bg-subtle); padding: 16px; border-radius: var(--radius-md); line-height: 1.6;">
+    <div style="font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Derivation Trace:</div>
+    <div>&bull; <strong>Prime Selection:</strong> p = {{ params.p }}, q = {{ params.q }} (Selected prime integers).</div>
+    <div>&bull; <strong>Modulus Calculation:</strong> n = p &times; q = {{ params.p }} &times; {{ params.q }} = {{ params.n }}.</div>
+    <div>&bull; <strong>Euler's Totient:</strong> &phi;(n) = (p - 1)(q - 1) = {{ params.p - 1 }} &times; {{ params.q - 1 }} = {{ params.phi }}.</div>
+    <div>&bull; <strong>Public Exponent Selection:</strong> e = {{ params.e }} (Coprime to &phi;(n), verifying gcd({{ params.e }}, {{ params.phi }}) = 1).</div>
+    <div>&bull; <strong>Private Exponent Inversion:</strong> d &equiv; e<sup>-1</sup> (mod &phi;(n)) &rarr; d = {{ params.d }} (Verifying ({{ params.d }} &times; {{ params.e }}) mod {{ params.phi }} = 1).</div>
+  </div>
+</div>
+
+<!-- Section 2: Mathematical Visualization & Calculator -->
+<div class="card" style="margin-bottom: 28px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">Mathematical Visualization</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Execute modular exponentiation with the live application keys
+      </div>
+    </div>
+    <span class="status-pill neutral">Interactive Trace</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- Encryption: C = M^e mod n -->
+    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px;">
+      <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 6px;">
+        Encryption: C = M<sup>e</sup> mod n
+      </h4>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 12px;">
+        Plaintext integer M is raised to public exponent {{ params.e }} modulo {{ params.n }}.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="rsaNumInput">Numerical Message (M &lt; {{ params.n }}):</label>
+        <input type="number" id="rsaNumInput" class="form-control" value="42" min="1" max="{{ params.n - 1 }}">
+      </div>
+      <button type="button" id="btnRSANumEncrypt" class="btn btn-primary btn-sm">
+        Encrypt: C = M^{{ params.e }} mod {{ params.n }}
+      </button>
+
+      <div id="rsaNumEncOutput">
+        <div class="code-block" style="background:#0f172a; margin-top:12px; font-size:0.85rem;">
+          <div><strong>Plaintext (M):</strong> {{ sample_enc.plaintext_m }}</div>
+          <div><strong>Formula:</strong> {{ sample_enc.formula }}</div>
+          <div><strong>Calculation:</strong> {{ sample_enc.calculation }}</div>
+          <div style="color:#38bdf8; font-size:1.02rem; margin-top:4px;">
+            <strong>Ciphertext (C):</strong> {{ sample_enc.ciphertext_c }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decryption: M = C^d mod n -->
+    <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px;">
+      <h4 style="font-size: 1rem; color: var(--text-main); margin-bottom: 6px;">
+        Decryption: M = C<sup>d</sup> mod n
+      </h4>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 12px;">
+        Ciphertext integer C is raised to private exponent {{ params.d }} modulo {{ params.n }}.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label" for="rsaCipherInput">Ciphertext Integer (C):</label>
+        <input type="number" id="rsaCipherInput" class="form-control" value="{{ sample_enc.ciphertext_c }}">
+      </div>
+      <button type="button" id="btnRSANumDecrypt" class="btn btn-secondary btn-sm">
+        Decrypt: M = C^{{ params.d }} mod {{ params.n }}
+      </button>
+
+      <div id="rsaNumDecOutput">
+        <div class="code-block" style="background:#0f172a; margin-top:12px; font-size:0.85rem;">
+          <div><strong>Ciphertext (C):</strong> {{ sample_dec.ciphertext_c }}</div>
+          <div><strong>Formula:</strong> {{ sample_dec.formula }}</div>
+          <div><strong>Calculation:</strong> {{ sample_dec.calculation }}</div>
+          <div style="color:#4ade80; font-size:1.02rem; margin-top:4px;">
+            <strong>Recovered Plaintext (M):</strong> {{ sample_dec.recovered_plaintext_m }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Concise Explanation of RSA's Role -->
+<div class="card" style="border-left: 4px solid var(--accent-blue);">
+  <h3 style="margin-bottom: 8px;">What RSA Provides in SecureVote</h3>
+  <div style="font-size: 0.92rem; color: var(--text-muted); line-height: 1.6;">
+    <p style="margin-bottom: 10px;">
+      <strong>Confidentiality and Key Protection:</strong> RSA ensures that ballots and symmetric session keys cannot be read by an adversary who intercepts network packets. Because factorization of large integers is computationally intractable without knowing the prime factors <span class="code-inline">p</span> and <span class="code-inline">q</span>, only the election server with private exponent <span class="code-inline">d</span> can recover the plaintext vote.
+    </p>
+    <p style="color: var(--status-danger); font-size: 0.88rem;">
+      <strong>Crucial Boundary:</strong> RSA does <em>not</em> provide integrity or tamper detection on its own. An adversary could alter bits in the ciphertext or inject forged votes without needing to decrypt the payload. To solve this, SecureVote pairs RSA with <strong>HMAC-SHA256</strong>.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/rsa.js') }}"></script>
+{% endblock %}

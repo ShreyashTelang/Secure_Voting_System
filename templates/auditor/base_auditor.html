@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Election Audit Portal | SecureVote{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    /* ==========================================================================
+       Auditor Portal - Unified Clean Top Navigation Layout
+       ========================================================================== */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Authority Header Bar */
+    .auditor-navbar {
+      background-color: #E8F3FD;
+      border-bottom: 1px solid #c8def4;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 4px rgba(56, 73, 89, 0.06);
+    }
+
+    .auditor-navbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 62px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .nav-left-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    /* Brand Logo */
+    .auditor-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--storm-dark);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .auditor-brand svg {
+      color: var(--storm-dark);
+    }
+
+    .auditor-brand-badge {
+      background: var(--storm-dark);
+      border: none;
+      color: #ffffff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-right-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .topbar-badge-readonly {
+      background: rgba(56, 73, 89, 0.08);
+      border: 1px solid rgba(56, 73, 89, 0.22);
+      color: var(--storm-dark);
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .user-pill {
+      font-size: 0.82rem;
+      color: var(--storm-dark);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+    }
+
+    .status-dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      display: inline-block;
+    }
+
+    /* ========================================================================
+       Sub-Navigation Bar: Active View Tabs
+       ======================================================================== */
+    .auditor-subbar {
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 24px;
+    }
+
+    .auditor-subbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .subbar-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .subbar-tab {
+      padding: 6px 14px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .subbar-tab:hover {
+      color: var(--text-main);
+      background-color: var(--bg-subtle);
+    }
+
+    .subbar-tab.active {
+      color: var(--storm-dark);
+      background-color: rgba(189, 221, 252, 0.55);
+      font-weight: 600;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 24px 48px 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    /* Global Metrics & Badges within Auditor pages */
+    .metric-value-lg {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      line-height: 1.1;
+      margin: 6px 0;
+      font-family: var(--font-mono);
+    }
+
+    .metric-label-sm {
+      font-size: 0.76rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .filter-chip {
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .filter-chip.active {
+      background: var(--primary);
+      color: var(--text-inverse);
+      border-color: var(--primary);
+    }
+
+    /* Modal / Drawer for Timeline Detail */
+    .timeline-drawer {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 480px;
+      max-width: 90vw;
+      height: 100vh;
+      background: var(--bg-surface);
+      box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+      z-index: 100;
+      overflow-y: auto;
+      padding: 28px;
+      border-left: 1px solid var(--border-light);
+    }
+
+    .timeline-drawer-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.4);
+      z-index: 99;
+    }
+
+    /* Footer */
+    .footer {
+      background-color: var(--bg-surface);
+      border-top: 1px solid var(--border-light);
+      padding: 20px 0;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: auto;
+    }
+
+    @media print {
+      .auditor-navbar, .auditor-subbar, .btn, .footer {
+        display: none !important;
+      }
+      .container {
+        padding: 0 !important;
+        max-width: 100% !important;
+      }
+    }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- ========================================================================
+       Top Navigation Bar
+       ======================================================================== -->
+  <header class="auditor-navbar">
+    <div class="auditor-navbar-inner">
+      <div class="nav-left-group">
+        <!-- Brand -->
+        <a href="{{ url_for('auditor_dashboard') }}" class="auditor-brand">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--storm-accent);">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+          <span>SecureVote</span>
+          <span class="auditor-brand-badge">Audit</span>
+        </a>
+      </div>
+
+      <div class="nav-right-group">
+        <span class="topbar-badge-readonly">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Strict Read-Only
+        </span>
+
+        <div class="user-pill">
+          <span class="status-dot-green"></span>
+          <span>{{ current_voter.voter_id if current_voter else 'AUD-2026-001' }}</span>
+        </div>
+
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" style="padding: 5px 12px; font-size: 0.82rem; background: #ffffff; color: var(--storm-dark); border-color: rgba(56, 73, 89, 0.25); font-weight: 600;">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ========================================================================
+       Sub-Navigation Bar: Active View Tabs
+       ======================================================================== -->
+  <div class="auditor-subbar">
+    <div class="auditor-subbar-inner">
+      <div class="subbar-tabs">
+        <a href="{{ url_for('auditor_dashboard') }}" class="subbar-tab {% if request.path == '/auditor/dashboard' %}active{% endif %}">Dashboard</a>
+        <a href="{{ url_for('auditor_votes') }}" class="subbar-tab {% if request.path == '/auditor/votes' %}active{% endif %}">Vote Audit</a>
+        <a href="{{ url_for('auditor_security_logs') }}" class="subbar-tab {% if request.path == '/auditor/security-logs' %}active{% endif %}">Security Logs</a>
+        <a href="{{ url_for('auditor_integrity') }}" class="subbar-tab {% if request.path == '/auditor/integrity' %}active{% endif %}">Integrity Checks</a>
+        <a href="{{ url_for('auditor_results') }}" class="subbar-tab {% if request.path == '/auditor/results' %}active{% endif %}">Results Verification</a>
+        <a href="{{ url_for('auditor_reports') }}" class="subbar-tab {% if request.path == '/auditor/reports' %}active{% endif %}">Audit Reports</a>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a href="{{ url_for('auditor_export_csv') }}" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.8rem;">
+          Export CSV
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flash Alerts -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div style="max-width: 1200px; margin: 16px auto 0 auto; padding: 0 24px; width: 100%;">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Work Area -->
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Auditor Footer -->
+  <footer class="footer">
+    <div class="footer-inner" style="max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <strong>SecureVote Auditor Console</strong> &mdash; Read-only election oversight under RSA public-key protection and HMAC-SHA256 authentication.
+      </div>
+      <div style="display: flex; gap: 18px; align-items: center;">
+        <span class="status-pill success">Cryptographic Auditor Mode Active</span>
+        <span>RFC 2104 Verified</span>
+        <span>Zero Write Privileges</span>
+      </div>
+    </div>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

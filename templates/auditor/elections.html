@@ -1,0 +1,112 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Election Oversight | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+    Election Metadata & Schedule
+  </div>
+  <h1>Election Oversight</h1>
+  <p class="subtitle">
+    Authoritative specification and cryptographic parameters for the current active election.
+  </p>
+</div>
+
+<!-- Main Specification Card -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>{{ summary.election.title }}</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">Election Identifier: ELEC-2026-MIT-001</div>
+    </div>
+    <span class="status-pill success">Active & Enforced</span>
+  </div>
+
+  <div class="grid-3" style="margin-bottom: 20px;">
+    <div>
+      <div class="metric-label-sm">Jurisdiction</div>
+      <div style="font-weight: 600; color: var(--text-main); margin-top: 4px;">{{ summary.election.jurisdiction or summary.election.constituency or 'University Student Governance' }}</div>
+    </div>
+    <div>
+      <div class="metric-label-sm">Voting Period</div>
+      <div style="font-weight: 600; color: var(--text-main); margin-top: 4px;">{{ summary.election.start_time or summary.election.start_date }} &mdash; {{ summary.election.end_time or summary.election.end_date }}</div>
+    </div>
+    <div>
+      <div class="metric-label-sm">Total Seats / Offices</div>
+      <div style="font-weight: 600; color: var(--text-main); margin-top: 4px;">1 Office (Student Council President)</div>
+    </div>
+  </div>
+
+  <div style="padding: 16px; background: var(--bg-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+    <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 6px;">Official Election Charter & Objectives</div>
+    <p style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+      {{ summary.election.description }}
+    </p>
+  </div>
+</div>
+
+<!-- Certified Candidate Roster & Vote Counts Section -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Official Candidates & Vote Tallies</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">Certified candidate roster with real-time ballot counts</div>
+    </div>
+    <span class="status-pill success">{{ total_votes }} Total Votes Recorded</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">ID</th>
+          <th>Candidate</th>
+          <th>Position</th>
+          <th>Affiliation</th>
+          <th>Manifesto Summary</th>
+          <th style="width: 22%;">Vote Share</th>
+          <th style="text-align: right; width: 90px;">Votes</th>
+          <th style="text-align: right; width: 80px;">Percentage</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in candidates %}
+          <tr>
+            <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-blue); font-size: 0.95rem;">
+              {{ loop.index }}
+            </td>
+            <td>
+              <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">{{ c.name }}</div>
+            </td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">{{ c.position }}</td>
+            <td>
+              <span class="status-pill neutral" style="font-size: 0.75rem;">{{ c.affiliation }}</span>
+            </td>
+            <td style="font-size: 0.82rem; color: var(--text-muted); max-width: 280px; line-height: 1.45;">
+              {{ c.manifesto }}
+            </td>
+            <td>
+              <div style="background: var(--bg-subtle); height: 8px; border-radius: 4px; overflow: hidden; width: 100%;">
+                <div style="background: var(--accent-blue); height: 100%; width: {{ c.percentage }}%;"></div>
+              </div>
+            </td>
+            <td style="font-family: var(--font-mono); font-weight: 700; text-align: right; font-size: 0.95rem; color: var(--text-main);">
+              {{ c.vote_count }}
+            </td>
+            <td style="font-family: var(--font-mono); font-weight: 600; text-align: right; font-size: 0.88rem; color: var(--text-dim);">
+              {{ c.percentage }}%
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">
+              No candidates registered.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

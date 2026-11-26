@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Review Ballot | SecureVote{% endblock %}
+
+{% block content %}
+<div style="max-width: 860px; margin: 0 auto;">
+  <div style="margin-bottom: 24px;">
+    <a href="{{ url_for('election_view') }}" style="font-size: 0.88rem; color: var(--text-dim); text-decoration: none;">
+      &larr; Return to Candidate List
+    </a>
+    <h1 style="margin-top: 8px;">Review Your Ballot</h1>
+    <p class="subtitle" style="margin-bottom: 0;">
+      Confirm your candidate selection before the cryptographic protection pipeline is initiated.
+    </p>
+  </div>
+
+  <!-- Ballot Summary Card -->
+  <div class="card" style="border-left: 4px solid var(--accent-blue);">
+    <div style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.04em;">
+      Selected Candidate for Student Council President
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; flex-wrap: wrap; gap: 8px;">
+      <h2 style="font-size: 1.6rem; color: var(--text-main);">{{ candidate.name }}</h2>
+      <span class="status-pill neutral">{{ candidate.affiliation }}</span>
+    </div>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">
+      {{ candidate.manifesto }}
+    </p>
+
+    <div style="margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-light); font-size: 0.85rem; color: var(--text-dim); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+      <div>Voter Token: <strong style="color: var(--text-main); font-family: var(--font-mono);">{{ current_voter.voter_id }}</strong></div>
+      <div>Server Public Key: <strong style="color: var(--text-main); font-family: var(--font-mono);">(e={{ server_public_key.e }}, n={{ server_public_key.n }})</strong></div>
+      <div>Session HMAC Secret: <strong style="color: var(--text-main); font-family: var(--font-mono);">Active</strong></div>
+    </div>
+  </div>
+
+  <input type="hidden" id="ballotCandidateId" value="{{ candidate.id }}">
+  <input type="hidden" id="previewCiphertext" value="{{ preview.packet.encrypted_vote }}">
+  <input type="hidden" id="previewHmacTag" value="{{ preview.packet.hmac_tag }}">
+  <input type="hidden" id="previewCanonical" value="{{ preview.packet.canonical_payload }}">
+
+  <!-- Action Controls -->
+  <div id="voteActionsContainer" class="card" style="margin-top: 24px;">
+    <h3 style="margin-bottom: 6px;">Submit Your Ballot</h3>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+      When you proceed, your ballot will be encrypted via RSA to ensure <strong>Confidentiality</strong>, and signed with HMAC-SHA256 to ensure <strong>Integrity and Authenticity</strong>.
+    </p>
+
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button type="button" id="btnCastVoteSecure" class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;">
+        Cast Vote Securely &rarr;
+      </button>
+
+      <button type="button" id="btnSimulateTamper" class="btn btn-secondary" style="border-color: #fca5a5; color: #dc2626;">
+        Simulate Packet Tampering (Test Defense)
+      </button>
+    </div>
+
+    <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 14px;">
+      &bull; <strong>Normal Workflow:</strong> Encrypts ballot &bull; Generates authentic HMAC tag &bull; Server verifies and records.<br>
+      &bull; <strong>Tamper Simulation:</strong> Adversary intercepts packet and modifies candidate choice without voter secret &bull; Server rejects vote immediately.
+    </div>
+  </div>
+
+  <!-- Interactive Security Processing Pipeline Screen -->
+  <div id="securityProcessingPipeline" style="display: none; margin-top: 24px;">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h3 style="margin-bottom: 2px;">Cryptographic Processing Pipeline</h3>
+          <div style="font-size: 0.82rem; color: var(--text-dim);">
+            Click any active stage below to inspect its intermediate values
+          </div>
+        </div>
+        <span id="pipelineStatusBadge" class="status-pill neutral">Processing...</span>
+      </div>
+
+      <div class="pipeline-track">
+        <div class="pipeline-node" id="nodeStage1" data-stage="1">
+          <div class="node-circle">1</div>
+          <div class="node-title">Vote Created</div>
+          <div class="node-subtitle">Payload formatted</div>
+        </div>
+
+        <div class="pipeline-connector" id="conn1"></div>
+
+        <div class="pipeline-node" id="nodeStage2" data-stage="2">
+          <div class="node-circle">2</div>
+          <div class="node-title">RSA Protection</div>
+          <div class="node-subtitle">C = M^e mod n</div>
+        </div>
+
+        <div class="pipeline-connector" id="conn2"></div>
+
+        <div class="pipeline-node" id="nodeStage3" data-stage="3">
+          <div class="node-circle">3</div>
+          <div class="node-title">HMAC-SHA256</div>
+          <div class="node-subtitle">256-bit Auth Tag</div>
+        </div>
+
+        <div class="pipeline-connector" id="conn3"></div>
+
+        <div class="pipeline-node" id="nodeStage4" data-stage="4">
+          <div class="node-circle">4</div>
+          <div class="node-title">Secure Request</div>
+          <div class="node-subtitle">HTTP Transmission</div>
+        </div>
+
+        <div class="pipeline-connector" id="conn4"></div>
+
+        <div class="pipeline-node" id="nodeStage5" data-stage="5">
+          <div class="node-circle">5</div>
+          <div class="node-title">Server Verification</div>
+          <div class="node-subtitle">compare_digest()</div>
+        </div>
+
+        <div class="pipeline-connector" id="conn5"></div>
+
+        <div class="pipeline-node" id="nodeStage6" data-stage="6">
+          <div class="node-circle">6</div>
+          <div class="node-title">Vote Accepted</div>
+          <div class="node-subtitle">Decrypted & Saved</div>
+        </div>
+      </div>
+
+      <!-- Stage Detail Drawer (Clickable Detail Inspector) -->
+      <div id="pipelineStageDetailBox" style="display: none; margin-top: 16px; padding: 14px 16px; background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <strong id="stageDetailTitle" style="font-size: 0.92rem; color: var(--text-main);">Stage Details</strong>
+          <span id="stageDetailPill" class="status-pill neutral">Active</span>
+        </div>
+        <div id="stageDetailBody" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Outcome Container -->
+  <div id="pipelineOutcomeDisplay"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/security.js') }}"></script>
+{% endblock %}

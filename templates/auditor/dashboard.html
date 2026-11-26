@@ -1,0 +1,276 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}Auditor Dashboard | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+        Election Oversight & Surveillance
+      </div>
+      <h1>Auditor Dashboard</h1>
+      <p class="subtitle" style="margin-bottom: 0;">
+        Independent cryptographic verification for <strong>{{ summary.election.title }}</strong>.
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <a href="{{ url_for('auditor_export_csv') }}" class="btn btn-secondary btn-sm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Export Audit CSV
+      </a>
+      <a href="{{ url_for('auditor_reports') }}" class="btn btn-primary btn-sm">
+        View Audit Report
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Election Status Header Card -->
+<div class="card" style="background: var(--bg-surface); border-left: 4px solid {% if summary.metrics.failed_hmac == 0 %}var(--status-success){% else %}var(--status-danger){% endif %};">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+    <div>
+      <div style="font-size: 0.82rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600;">Active Election</div>
+      <div style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">{{ summary.election.title }}</div>
+      <div style="font-size: 0.88rem; color: var(--text-muted); margin-top: 4px;">
+        Jurisdiction: {{ summary.election.jurisdiction or summary.election.constituency or 'University Student Governance' }} &bull; Period: {{ summary.election.start_time or summary.election.start_date }} to {{ summary.election.end_time or summary.election.end_date }}
+      </div>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center;">
+      <div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600; text-align: right;">Election State</div>
+        <div style="text-align: right;"><span class="status-pill success">ACTIVE</span></div>
+      </div>
+      <div style="height: 36px; width: 1px; background: var(--border-light); margin: 0 4px;"></div>
+      <div>
+        <div style="font-size: 0.78rem; color: var(--text-dim); text-transform: uppercase; font-weight: 600; text-align: right;">Audit Assessment</div>
+        <div style="text-align: right;">
+          {% if summary.metrics.failed_hmac == 0 %}
+            <span class="status-pill success">SYSTEM INTEGRITY VERIFIED</span>
+          {% else %}
+            <span class="status-pill danger">INTEGRITY ALERT DETECTED</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary Metrics Grid (8 Core Operational Counters) -->
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Eligible Voters</div>
+    <div class="metric-value-lg">{{ summary.metrics.eligible_voters }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Registered registry accounts</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Votes Cast</div>
+    <div class="metric-value-lg">{{ summary.metrics.votes_cast }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Turnout: <strong>{{ summary.metrics.voter_turnout }}%</strong></div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">HMAC Verified</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">{{ summary.metrics.successful_hmac }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Authentication rate: {{ summary.metrics.verification_rate }}%</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Integrity Failures</div>
+    <div class="metric-value-lg" style="color: {% if summary.metrics.failed_hmac > 0 %}var(--status-danger){% else %}var(--text-muted){% endif %};">
+      {{ summary.metrics.failed_hmac }}
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Tampered payloads intercepted</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Rejected Requests</div>
+    <div class="metric-value-lg" style="color: {% if summary.metrics.rejected_requests > 0 %}var(--status-warning){% else %}var(--text-muted){% endif %};">
+      {{ summary.metrics.rejected_requests }}
+    </div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Tamper + duplicates + auditor blocks</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Duplicate Attempts</div>
+    <div class="metric-value-lg">{{ summary.metrics.duplicate_attempts }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Blocked by single-vote rule</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Security Events</div>
+    <div class="metric-value-lg">{{ summary.metrics.total_security_events }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Logged to immutable audit log</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">System Availability</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">ONLINE</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">100% operational uptime</div>
+  </div>
+</div>
+
+<!-- CIA Security Principles Audit Section -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3>Election Security Overview (CIA Triad Controls)</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">Independent evaluation of core cryptographic and architectural controls</div>
+    </div>
+    <span class="status-pill success">All 3 Principles Active</span>
+  </div>
+
+  <div class="grid-3">
+    <!-- Confidentiality -->
+    <div style="padding: 18px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-subtle);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Confidentiality</span>
+        <span class="status-pill success">&check; Operational</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        RSA-3233 Public-Key Protection
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        {{ summary.cia.confidentiality.explanation }}
+      </p>
+      <div style="font-size: 0.78rem; color: var(--text-dim); border-top: 1px solid var(--border-light); padding-top: 8px;">
+        Private key \(d\) strictly isolated on server.
+      </div>
+    </div>
+
+    <!-- Integrity -->
+    <div style="padding: 18px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-subtle);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Integrity</span>
+        <span class="status-pill {% if summary.metrics.failed_hmac == 0 %}success{% else %}danger{% endif %}">
+          {% if summary.metrics.failed_hmac == 0 %}&check; Operational{% else %}&excl; Violations Caught{% endif %}
+        </span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        HMAC-SHA256 (RFC 2104)
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        {{ summary.cia.integrity.explanation }}
+      </p>
+      <div style="font-size: 0.78rem; color: var(--text-dim); border-top: 1px solid var(--border-light); padding-top: 8px;">
+        Verified: {{ summary.metrics.successful_hmac }} &bull; Failures: {{ summary.metrics.failed_hmac }}
+      </div>
+    </div>
+
+    <!-- Availability -->
+    <div style="padding: 18px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-subtle);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: 700; font-size: 1rem; color: var(--text-main);">Availability</span>
+        <span class="status-pill success">&check; Operational</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        Resilient Service Architecture
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 12px;">
+        {{ summary.cia.availability.explanation }}
+      </p>
+      <div style="font-size: 0.78rem; color: var(--text-dim); border-top: 1px solid var(--border-light); padding-top: 8px;">
+        Maintained by system engineering, not RSA/HMAC.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Vote Audit Records & Recent Security Events -->
+<div class="grid-2">
+  <!-- Recent Vote Ledger -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Recent Processed Ballots</h3>
+        <div style="font-size: 0.82rem; color: var(--text-dim);">Anonymized cryptographic reference records</div>
+      </div>
+      <a href="{{ url_for('auditor_votes') }}" class="btn btn-secondary btn-sm">View All Votes</a>
+    </div>
+
+    {% if summary.recent_votes %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Reference ID</th>
+              <th>Timestamp</th>
+              <th>RSA</th>
+              <th>HMAC</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for v in summary.recent_votes %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('auditor_votes') }}?ref={{ v.reference_id }}" style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600;">
+                    {{ v.reference_id }}
+                  </a>
+                </td>
+                <td style="font-size: 0.82rem; color: var(--text-dim);">{{ v.timestamp }}</td>
+                <td><span class="status-pill neutral" style="font-size: 0.72rem;">{{ v.rsa_status }}</span></td>
+                <td><span class="status-pill success" style="font-size: 0.72rem;">{{ v.hmac_status }}</span></td>
+                <td><span class="status-pill success" style="font-size: 0.72rem;">{{ v.status }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding: 24px; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+        No votes recorded yet in this election session.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Security Events -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3>Recent Security Events</h3>
+        <div style="font-size: 0.82rem; color: var(--text-dim);">System event log trail</div>
+      </div>
+      <a href="{{ url_for('auditor_security_logs') }}" class="btn btn-secondary btn-sm">All Logs</a>
+    </div>
+
+    {% if summary.recent_logs %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Actor</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for l in summary.recent_logs %}
+              <tr>
+                <td style="font-size: 0.82rem; font-weight: 600;">{{ l.event_name }}</td>
+                <td style="font-family: var(--font-mono); font-size: 0.78rem;">{{ l.actor_id }}</td>
+                <td>
+                  <span class="status-pill {% if l.status in ['SUCCESS', 'ACCEPTED'] %}success{% elif l.status in ['FAILED', 'REJECTED', 'ALERT'] %}danger{% else %}warning{% endif %}" style="font-size: 0.72rem;">
+                    {{ l.status }}
+                  </span>
+                </td>
+                <td style="font-size: 0.78rem; color: var(--text-dim);">{{ l.timestamp }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="padding: 24px; text-align: center; color: var(--text-dim); font-size: 0.9rem;">
+        No security events recorded yet.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

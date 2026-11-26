@@ -1,0 +1,135 @@
+{% extends "auditor/base_auditor.html" %}
+
+{% block title %}RSA Cryptography Audit | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-blue);">
+    Asymmetric Confidentiality Audit
+  </div>
+  <h1>RSA Cryptography</h1>
+  <p class="subtitle">
+    Audit of public key distribution, key derivation parameters, and ballot confidentiality controls.
+  </p>
+</div>
+
+<!-- RSA Status Cards -->
+<div class="grid-4" style="margin-bottom: 24px;">
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Cryptographic Status</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">OPERATIONAL</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Confidentiality enforced</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">RSA Protected Ballots</div>
+    <div class="metric-value-lg">{{ data.total_rsa_protected_requests }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Total encrypted payloads</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Successful Decryptions</div>
+    <div class="metric-value-lg" style="color: var(--status-success);">{{ data.successful_rsa_operations }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Server ledger processing</div>
+  </div>
+
+  <div class="card" style="margin-bottom: 0;">
+    <div class="metric-label-sm">Failed RSA Operations</div>
+    <div class="metric-value-lg" style="color: var(--text-muted);">{{ data.failed_rsa_operations }}</div>
+    <div style="font-size: 0.82rem; color: var(--text-dim);">Zero mathematical faults</div>
+  </div>
+</div>
+
+<!-- Asymmetric Key Pair Audit Inspection -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3>Public Key Audit Information</h3>
+      <span class="status-pill success">Publicly Auditable</span>
+    </div>
+
+    <table class="table">
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 45%;">Public Exponent (\(e\))</td>
+          <td style="font-family: var(--font-mono);">{{ data.public_key_info.e }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Modulus (\(n = p \times q\))</td>
+          <td style="font-family: var(--font-mono);">{{ data.public_key_info.n }}</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Modulus Bit Length</td>
+          <td>{{ data.key_bit_length }}-bit (educational demonstration)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Encryption Transformation</td>
+          <td style="font-family: var(--font-mono);">\(c \equiv m^e \pmod{n}\)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Public Key Signature</td>
+          <td style="font-family: var(--font-mono); font-size: 0.78rem;">RSA-PUBLIC-KEY-VERIFIED</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Private Key Security & Principle of Least Privilege</h3>
+      <span class="status-pill neutral">Server Isolated</span>
+    </div>
+
+    <div style="padding: 16px; background: var(--bg-subtle); border-radius: var(--radius-md); border: 1px solid var(--border-light); margin-bottom: 16px;">
+      <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">
+        &lock; Private Key (\(d\)) Isolation
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0;">
+        In compliance with cryptographic auditing standards, <strong>the private decryption exponent \(d\) is never exposed to the client, frontend browser, or the auditor portal</strong>.
+        The auditor verifies confidentiality by inspecting public mathematical parameters, operation logs, and tamper rejection rates without compromising key isolation.
+      </p>
+    </div>
+
+    <table class="table">
+      <tbody>
+        <tr>
+          <td style="font-weight: 600; width: 40%;">Private Exponent Status</td>
+          <td><span class="status-pill success">Secured on Server</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Decryption Transformation</td>
+          <td style="font-family: var(--font-mono);">\(m \equiv c^d \pmod{n}\)</td>
+        </tr>
+        <tr>
+          <td style="font-weight: 600;">Auditor Access Level</td>
+          <td><span class="status-pill neutral">Zero-Knowledge Verification</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Mathematical Derivation Verification -->
+<div class="card">
+  <div class="card-header">
+    <h3>Cryptographic Key Derivation Audit Steps</h3>
+    <span class="brand-badge">Euler's Totient</span>
+  </div>
+
+  <div class="grid-4" style="margin-bottom: 12px;">
+    {% for step in data.derivation_steps %}
+      <div style="padding: 14px; background: var(--bg-subtle); border: 1px solid var(--border-light); border-radius: var(--radius-md);">
+        <div style="font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--accent-blue); margin-bottom: 4px;">
+          {{ step.step }}
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">
+          {{ step.formula }}
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4;">
+          {{ step.explanation }}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

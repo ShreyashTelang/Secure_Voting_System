@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+
+{% block title %}HMAC-SHA256 Demonstration & Tampering - CIS Practical Exam{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <div class="section-header">
+        <div class="section-tag"><i class="fa-solid fa-fingerprint"></i> MESSAGE AUTHENTICATION</div>
+        <h1 class="section-title">HMAC-SHA256 Demonstration & Tampering Sandbox</h1>
+        <p class="section-description">
+            Explore Keyed-Hash Message Authentication (RFC 2104 / FIPS 198-1) using SHA-256.
+            Observe the inner/outer padding transformations, constant-time verification, and active vote tampering detection.
+        </p>
+    </div>
+
+    <!-- Section 8: Theoretical Distinction Callout -->
+    <div class="crypto-distinction-banner">
+        <div class="distinction-header">
+            <i class="fa-solid fa-triangle-exclamation text-accent"></i>
+            <h3>Section 8: Fundamental Cryptographic Distinctions for Viva</h3>
+        </div>
+        <div class="distinction-grid">
+            <div class="dist-card">
+                <div class="dist-icon red"><i class="fa-solid fa-ban"></i></div>
+                <div>
+                    <strong>SHA-256 $\neq$ Encryption:</strong>
+                    <p>SHA-256 is an unkeyed cryptographic hash function (one-way). It cannot be "decrypted".</p>
+                </div>
+            </div>
+            <div class="dist-card">
+                <div class="dist-icon red"><i class="fa-solid fa-ban"></i></div>
+                <div>
+                    <strong>HMAC-SHA256 $\neq$ Encryption:</strong>
+                    <p>HMAC does not provide confidentiality. An HMAC tag proves authenticity and integrity, not secrecy.</p>
+                </div>
+            </div>
+            <div class="dist-card">
+                <div class="dist-icon green"><i class="fa-solid fa-check"></i></div>
+                <div>
+                    <strong>HMAC = Integrity + Authentication:</strong>
+                    <p>Integrity (detects modification) + Authentication (verifies possession of the shared secret key $K$).</p>
+                </div>
+            </div>
+            <div class="dist-card">
+                <div class="dist-icon purple"><i class="fa-solid fa-shield"></i></div>
+                <div>
+                    <strong>Why NOT $H(\text{Key} \parallel \text{Msg})$:</strong>
+                    <p>Naively concatenating Key + Message is vulnerable to <em>Length Extension Attacks</em>. HMAC solves this via nested inner/outer padding.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 9: Step-by-Step HMAC-SHA256 Generator -->
+    <section class="section-container">
+        <div class="section-header">
+            <div class="section-tag"><i class="fa-solid fa-cogs"></i> RFC 2104 GENERATOR</div>
+            <h2 class="section-title">Section 9: HMAC Step-by-Step Generation</h2>
+            <p class="section-description">
+                Input an educational ballot message and secret key to observe the inner pad ($\text{ipad}$), outer pad ($\text{opad}$), and nested SHA-256 digests.
+            </p>
+        </div>
+
+        <div class="hmac-interactive-card">
+            <div class="hmac-input-row">
+                <div class="form-group flex-2">
+                    <label for="hmacMessage" class="form-label">Ballot Message ($M$):</label>
+                    <input type="text" id="hmacMessage" class="form-input" value="Candidate_A" placeholder="e.g. Candidate_A">
+                </div>
+                <div class="form-group flex-2">
+                    <label for="hmacKey" class="form-label">Shared Secret Key ($K$):</label>
+                    <input type="text" id="hmacKey" class="form-input" value="VotingSecret123" placeholder="e.g. VotingSecret123">
+                </div>
+                <div class="form-group flex-1" style="align-self: flex-end;">
+                    <button type="button" class="btn-primary btn-block" onclick="generateHMACDemo()">
+                        <i class="fa-solid fa-stamp"></i> Generate HMAC
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visual HMAC Generation Pipeline -->
+            <div class="hmac-flow-display">
+                <div class="flow-pill">Message: "Candidate_A"</div>
+                <span class="flow-op">+</span>
+                <div class="flow-pill">Secret Key: "VotingSecret123"</div>
+                <span class="flow-op">+</span>
+                <div class="flow-pill">SHA-256 (RFC 2104)</div>
+                <span class="flow-arrow">&darr;</span>
+                <div class="flow-pill highlight-hmac">HMAC-SHA256</div>
+                <span class="flow-arrow">&darr;</span>
+                <div class="flow-tag-display">
+                    <span class="tag-label">Authentication Tag (256 bits / 64 Hex Characters):</span>
+                    <code id="displayTag" class="tag-hex text-accent">e2617a66e4a2d39b83b3e0bfe3dc88d2ceb582b9a76bc859846fe0fefd03923a</code>
+                </div>
+            </div>
+
+            <!-- RFC 2104 Detailed Steps Breakdown -->
+            <div class="rfc-steps-breakdown" id="rfcStepsContainer">
+                <h4 class="breakdown-title"><i class="fa-solid fa-microscope text-accent"></i> RFC 2104 Internal Padding Details:</h4>
+                <div class="rfc-step-item">
+                    <span class="rfc-step-num">Step 1</span>
+                    <div>
+                        <strong>Key Conditioning ($K'$):</strong> Key length = 15 bytes (&le; 64 bytes block size).
+                        Padded with zeros on the right to $B = 64$ bytes ($512$ bits).
+                    </div>
+                </div>
+                <div class="rfc-step-item">
+                    <span class="rfc-step-num">Step 2</span>
+                    <div>
+                        <strong>Inner Pad XOR:</strong> Compute $K_{in} = K' \oplus \text{ipad}$, where $\text{ipad} = \text{0x36}$ repeated 64 times.
+                    </div>
+                </div>
+                <div class="rfc-step-item">
+                    <span class="rfc-step-num">Step 3</span>
+                    <div>
+                        <strong>Inner Hash:</strong> $H_{inner} = \text{SHA-256}(K_{in} \parallel \text{Message})$. Produces 32-byte intermediate hash.
+                    </div>
+                </div>
+                <div class="rfc-step-item">
+                    <span class="rfc-step-num">Step 4</span>
+                    <div>
+                        <strong>Outer Pad XOR:</strong> Compute $K_{out} = K' \oplus \text{opad}$, where $\text{opad} = \text{0x5C}$ repeated 64 times.
+                    </div>
+                </div>
+                <div class="rfc-step-item">
+                    <span class="rfc-step-num">Step 5</span>
+                    <div>
+                        <strong>Final Digest (Authentication Tag):</strong> $\text{Tag} = \text{SHA-256}(K_{out} \parallel H_{inner})$.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 10: HMAC Constant-Time Verification Sandbox -->
+    <section class="section-container">
+        <div class="section-header">
+            <div class="section-tag"><i class="fa-solid fa-check-double"></i> VERIFICATION ENGINE</div>
+            <h2 class="section-title">Section 10: Server HMAC Verification</h2>
+            <p class="section-description">
+                Demonstrates how the election server recalculates the HMAC and compares it with the received tag using
+                Python's <code>hmac.compare_digest()</code> to eliminate timing side-channel attacks.
+            </p>
+        </div>
+
+        <div class="verify-grid">
+            <div class="verify-input-card">
+                <div class="form-group">
+                    <label class="form-label">Message Received at Server:</label>
+                    <input type="text" id="verifyMessage" class="form-input" value="Candidate_A">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Server Shared Secret Key:</label>
+                    <input type="text" id="verifyKey" class="form-input" value="VotingSecret123">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Received HMAC Tag:</label>
+                    <input type="text" id="verifyTag" class="form-input" value="e2617a66e4a2d39b83b3e0bfe3dc88d2ceb582b9a76bc859846fe0fefd03923a">
+                </div>
+                <button type="button" class="btn-primary btn-block" onclick="runHMACVerification()">
+                    <i class="fa-solid fa-shield-check"></i> Verify Tag at Server
+                </button>
+            </div>
+
+            <div class="verify-output-card" id="verifyOutputBox">
+                <div class="verify-state-idle">
+                    <i class="fa-solid fa-hourglass-start"></i>
+                    <p>Click "Verify Tag at Server" to run constant-time comparison.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 11: HMAC Tampering Demonstration (CRUCIAL FOR ESE) -->
+    <section class="section-container" id="tampering">
+        <div class="section-header">
+            <div class="section-tag alert-tag"><i class="fa-solid fa-bug"></i> LIVE ATTACK SIMULATION</div>
+            <h2 class="section-title">Section 11: Vote Tampering Demonstration</h2>
+            <p class="section-description">
+                Demonstrate to the examiner what happens when a Man-in-the-Middle adversary alters
+                <strong>Candidate A $\to$ Candidate B</strong> in transit without knowing the voter's shared secret key.
+            </p>
+        </div>
+
+        <div class="tamper-demo-card">
+            <div class="tamper-scenario-box">
+                <div class="tamper-step">
+                    <div class="badge-stage">NORMAL REQUEST</div>
+                    <h4>1. Legitimate Voter casts vote:</h4>
+                    <div class="tamper-val-box">
+                        Candidate = <code>Candidate_A</code><br>
+                        HMAC Tag = <code class="text-accent" id="legitTagDisplay">e2617a66e4a2d39b83b3e0bfe3dc88d2ceb582b9a76bc859846fe0fefd03923a</code>
+                    </div>
+                </div>
+
+                <div class="tamper-arrow">
+                    <i class="fa-solid fa-arrow-down-long text-red"></i>
+                    <span>ADVERSARY INTERCEPTION</span>
+                </div>
+
+                <div class="tamper-step adversary">
+                    <div class="badge-stage alert">ACTIVE MITM ATTACK</div>
+                    <h4>2. Adversary intercepts packet on network:</h4>
+                    <p>Attacker alters message from <code>Candidate_A</code> $\to$ <code>Candidate_B</code>. BUT the attacker does not possess <code>VotingSecret123</code>, so they cannot forge a new valid HMAC!</p>
+                </div>
+            </div>
+
+            <!-- Big Interactive Attack Button -->
+            <div style="text-align: center; margin: 25px 0;">
+                <button type="button" class="btn-danger cta-large" id="btnSimulateTamper" onclick="executeTamperAttack()">
+                    <i class="fa-solid fa-biohazard"></i> Simulate Vote Tampering Now
+                </button>
+            </div>
+
+            <!-- Dynamic Tamper Attack Result Display -->
+            <div class="tamper-alarm-card" id="tamperAlarmBox" style="display: none;">
+                <!-- Populated via JavaScript -->
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+function generateHMACDemo() {
+    const msg = document.getElementById('hmacMessage').value;
+    const key = document.getElementById('hmacKey').value;
+
+    fetch('{{ url_for("api_hmac_generate") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, key: key })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('displayTag').innerText = data.steps.final_hmac_tag;
+            document.getElementById('verifyMessage').value = msg;
+            document.getElementById('verifyKey').value = key;
+            document.getElementById('verifyTag').value = data.steps.final_hmac_tag;
+            document.getElementById('legitTagDisplay').innerText = data.steps.final_hmac_tag;
+        } else {
+            alert(data.error);
+        }
+    });
+}
+
+function runHMACVerification() {
+    const msg = document.getElementById('verifyMessage').value;
+    const key = document.getElementById('verifyKey').value;
+    const tag = document.getElementById('verifyTag').value;
+
+    fetch('{{ url_for("api_hmac_verify") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, key: key, tag: tag })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const out = document.getElementById('verifyOutputBox');
+        if (data.success && data.is_valid) {
+            out.innerHTML = `
+                <div class="verify-result-card success">
+                    <div class="result-header">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <h3>✓ HMAC VERIFIED</h3>
+                    </div>
+                    <div class="result-body">
+                        <div class="result-item"><i class="fa-solid fa-check"></i> Message integrity confirmed (No bits altered)</div>
+                        <div class="result-item"><i class="fa-solid fa-check"></i> Message authenticated with shared secret</div>
+                        <div class="result-item"><i class="fa-solid fa-check"></i> Timing attack resistant (compare_digest == True)</div>
+                        <div class="tag-compare-box">
+                            <div>Received Tag:   <code>${data.received_tag}</code></div>
+                            <div>Calculated Tag: <code>${data.calculated_tag}</code></div>
+                        </div>
+                    </div>
+                    <div class="result-decision accepted">DECISION: ACCEPT BALLOT FOR PROCESSING</div>
+                </div>
+            `;
+        } else {
+            out.innerHTML = `
+                <div class="verify-result-card danger">
+                    <div class="result-header">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <h3>✗ HMAC VERIFICATION FAILED</h3>
+                    </div>
+                    <div class="result-body">
+                        <div class="result-item text-red"><i class="fa-solid fa-xmark"></i> Message may have been modified in transit!</div>
+                        <div class="result-item text-red"><i class="fa-solid fa-xmark"></i> Sender does not possess the matching secret key!</div>
+                        <div class="tag-compare-box">
+                            <div>Received Tag:   <code class="text-red">${data.received_tag}</code></div>
+                            <div>Calculated Tag: <code class="text-green">${data.calculated_tag}</code></div>
+                        </div>
+                    </div>
+                    <div class="result-decision rejected">DECISION: REJECT THE VOTING REQUEST</div>
+                </div>
+            `;
+        }
+    });
+}
+
+function executeTamperAttack() {
+    const orig = "Candidate_A";
+    const tamp = "Candidate_B";
+    const key = "VotingSecret123";
+
+    fetch('{{ url_for("api_hmac_tamper_sim") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ original_message: orig, tampered_message: tamp, key: key })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            const sim = data.simulation;
+            const alarmBox = document.getElementById('tamperAlarmBox');
+            alarmBox.style.display = 'block';
+            alarmBox.scrollIntoView({ behavior: 'smooth' });
+
+            alarmBox.innerHTML = `
+                <div class="alarm-header">
+                    <span class="alarm-icon"><i class="fa-solid fa-bell fa-shake"></i></span>
+                    <div class="alarm-title-group">
+                        <h2 class="alarm-title">🚨 TAMPERING DETECTED</h2>
+                        <h3 class="alarm-subtitle">🚨 VOTE REJECTED BY SERVER</h3>
+                    </div>
+                </div>
+
+                <div class="alarm-body">
+                    <div class="alarm-comparison-grid">
+                        <div class="alarm-comp-item">
+                            <span class="comp-label">Original Vote Dispatched:</span>
+                            <span class="comp-val text-green">${sim.original_message}</span>
+                        </div>
+                        <div class="alarm-comp-item">
+                            <span class="comp-label">Modified Vote Arrived at Server:</span>
+                            <span class="comp-val text-red">${sim.tampered_message}</span>
+                        </div>
+                        <div class="alarm-comp-item full">
+                            <span class="comp-label">Original HMAC on Packet:</span>
+                            <code class="comp-code text-blue">${sim.original_hmac}</code>
+                        </div>
+                        <div class="alarm-comp-item full">
+                            <span class="comp-label">Server Recomputed HMAC on "${sim.tampered_message}":</span>
+                            <code class="comp-code text-red">${sim.server_recomputed_hmac}</code>
+                        </div>
+                    </div>
+
+                    <div class="avalanche-metrics-box">
+                        <div class="metric-item">
+                            <span class="metric-num">${sim.differing_bits} / 256</span>
+                            <span class="metric-desc">Differing Bits</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-num">${sim.bit_difference_percentage}%</span>
+                            <span class="metric-desc">Avalanche Difference</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-num text-red">MISMATCH</span>
+                            <span class="metric-desc">compare_digest Result</span>
+                        </div>
+                    </div>
+
+                    <div class="alarm-summary-text">
+                        <strong>Why did this happen?</strong> Even though the attacker changed only a single letter ('A' to 'B'),
+                        the SHA-256 hash function completely scrambled the internal state (Avalanche Effect).
+                        Because the server recomputes the HMAC using the voter's legitimate pre-shared secret key,
+                        the calculated digest does not match the received tag.
+                        The election server detects the integrity violation and <strong>rejects the vote</strong>!
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+</script>
+{% endblock %}

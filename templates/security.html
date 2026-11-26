@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Security Center | SecureVote{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+  <span class="status-pill success" style="margin-bottom: 8px;">● Security Engine Operational</span>
+  <h1>Security Center</h1>
+  <p class="subtitle" style="margin-bottom: 0;">
+    Inspect the cryptographic pipeline, key management mechanisms, and verifiable audit events.
+  </p>
+</div>
+
+<!-- Security Sub-Navigation -->
+<div class="sub-nav">
+  <a href="{{ url_for('security_overview') }}" class="sub-nav-item active">Overview (CIA Triad)</a>
+  <a href="{{ url_for('security_rsa') }}" class="sub-nav-item">RSA Cryptography</a>
+  <a href="{{ url_for('security_hmac') }}" class="sub-nav-item">HMAC-SHA256</a>
+  <a href="{{ url_for('security_integrity_demo') }}" class="sub-nav-item">Tampering Simulation</a>
+  <a href="{{ url_for('security_availability') }}" class="sub-nav-item">System Availability</a>
+</div>
+
+<!-- Section 1: CIA Security Triad Overview -->
+<div style="margin-bottom: 32px;">
+  <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 16px;">
+    <h2>CIA Security Overview</h2>
+    <span style="font-size: 0.85rem; color: var(--text-dim);">Real-Time Cryptographic Status</span>
+  </div>
+
+  <div class="grid-3">
+    <!-- Confidentiality -->
+    <div class="card" style="border-top: 4px solid var(--accent-blue);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin-bottom: 0;">Confidentiality</h3>
+        <span class="status-pill success">✓ Protected</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        RSA Public-Key Encryption
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        Protects sensitive voter candidate selections from eavesdropping. Only the holder of the server's private key (<span class="code-inline">d</span>) can decrypt the ciphertext.
+      </p>
+      <div class="code-inline" style="display: block; font-size: 0.8rem; margin-bottom: 10px;">
+        Vote &rarr; RSA Public Key &rarr; Ciphertext
+      </div>
+      <a href="{{ url_for('security_rsa') }}" style="font-size: 0.85rem;">Inspect RSA Parameters &rarr;</a>
+    </div>
+
+    <!-- Integrity -->
+    <div class="card" style="border-top: 4px solid var(--status-success);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin-bottom: 0;">Integrity & Auth</h3>
+        <span class="status-pill success">✓ Verified</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        HMAC-SHA256 (RFC 2104)
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        Guarantees that ballots are not altered in transit and confirms voter credential ownership. In-flight bit manipulation causes an immediate authentication tag mismatch.
+      </p>
+      <div class="code-inline" style="display: block; font-size: 0.8rem; margin-bottom: 10px;">
+        Payload + Key &rarr; HMAC &rarr; 256-bit Tag
+      </div>
+      <a href="{{ url_for('security_hmac') }}" style="font-size: 0.85rem;">Inspect HMAC Padding &rarr;</a>
+    </div>
+
+    <!-- Availability -->
+    <div class="card" style="border-top: 4px solid #0f172a;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin-bottom: 0;">Availability</h3>
+        <span class="status-pill success">✓ Operational</span>
+      </div>
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--accent-blue); margin-bottom: 8px;">
+        Resilient System Design
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+        Enforced by robust schema validation, duplicate-voting prevention, and graceful error handling. If corrupted requests arrive, the system safely discards them without crashing.
+      </p>
+      <div class="code-inline" style="display: block; font-size: 0.8rem; margin-bottom: 10px;">
+        Reliable Server &bull; ACID SQLite &bull; Fault Isolation
+      </div>
+      <a href="{{ url_for('security_availability') }}" style="font-size: 0.85rem;">Inspect Availability Status &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: How the Vote is Protected (Key Management & Hybrid Flow) -->
+<div class="card" style="margin-bottom: 32px;">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">How the Vote is Protected</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Hybrid Cryptographic Relationship between RSA and HMAC-SHA256
+      </div>
+    </div>
+    <span class="status-pill neutral">Hybrid Model</span>
+  </div>
+
+  <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px;">
+    SecureVote maintains a clear separation of cryptographic responsibilities. <strong>RSA does not generate the HMAC tag</strong>, nor does HMAC encrypt the ballot:
+  </p>
+
+  <div class="grid-2" style="margin-bottom: 24px;">
+    <div class="card" style="background: var(--bg-subtle); border-color: var(--border-light); margin-bottom: 0;">
+      <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">
+        RSA Responsibilities:
+      </div>
+      <ul style="margin-left: 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+        <li>Asymmetric public/private keypair separation.</li>
+        <li>Protects the confidentiality of the voter ballot choice.</li>
+        <li>Protects symmetric session key material in transit.</li>
+        <li>Requires private exponent <span class="code-inline">d</span> to decrypt.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="background: var(--bg-subtle); border-color: var(--border-light); margin-bottom: 0;">
+      <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 6px; color: var(--text-main);">
+        HMAC-SHA256 Responsibilities:
+      </div>
+      <ul style="margin-left: 20px; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">
+        <li>RFC 2104 keyed-hashing with SHA-256.</li>
+        <li>Protects transmission packet against tampering.</li>
+        <li>Authenticates possession of the voter's credential secret.</li>
+        <li>Verified using constant-time comparison (<span class="code-inline">compare_digest</span>).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Interactive Hybrid Key Transport Visualizer -->
+  <div style="border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 18px; background: #ffffff;">
+    <div style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;">
+      Hybrid Key Transport Demonstration (Live Trace)
+    </div>
+    <div class="code-block" style="font-size: 0.85rem;">
+      <div>1. Generated Session Key:   <strong>{{ hybrid_demo.original_session_key }}</strong></div>
+      <div>2. RSA Public Key Used:     {{ hybrid_demo.rsa_public_key }}</div>
+      <div>3. Encrypted Key Payload:    {{ hybrid_demo.encrypted_session_key }}</div>
+      <div>4. Server Decryption with d: <strong>{{ hybrid_demo.server_decryption }}</strong> (Match: {{ hybrid_demo.key_recovered_cleanly }})</div>
+    </div>
+    <div style="font-size: 0.84rem; color: var(--text-dim); margin-top: 8px;">
+      {{ hybrid_demo.security_rationale }}
+    </div>
+  </div>
+</div>
+
+<!-- Section 3: Security Event Timeline -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 style="margin-bottom: 2px;">Security Event Timeline</h3>
+      <div style="font-size: 0.85rem; color: var(--text-dim);">
+        Immutable audit log of authentication, encryption, and verification events
+      </div>
+    </div>
+    <span class="status-pill neutral">Live Audit</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width: 170px;">Timestamp</th>
+          <th>Event Name</th>
+          <th>Actor / Entity</th>
+          <th>Description</th>
+          <th style="width: 110px;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in timeline %}
+          <tr>
+            <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-dim);">
+              {{ log.timestamp }}
+            </td>
+            <td>
+              <span class="code-inline" style="font-weight: 600;">{{ log.event_name }}</span>
+            </td>
+            <td style="font-family: var(--font-mono); font-size: 0.85rem;">
+              {{ log.actor_id }}
+            </td>
+            <td style="font-size: 0.88rem; color: var(--text-muted);">
+              {{ log.description }}
+            </td>
+            <td>
+              {% if log.status == 'SUCCESS' %}
+                <span class="status-pill success">Success</span>
+              {% elif log.status == 'REJECTED' or log.status == 'ALERT' %}
+                <span class="status-pill danger">{{ log.status }}</span>
+              {% elif log.status == 'WARNING' %}
+                <span class="status-pill warning">Warning</span>
+              {% else %}
+                <span class="status-pill neutral">{{ log.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

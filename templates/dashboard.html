@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Voter Dashboard | Secure Electronic Voting System{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 24px;">
+    <h1>Voter Dashboard</h1>
+    <p style="color: var(--text-secondary);">
+        Welcome, <strong>{{ user.username }}</strong>. Review your cryptographic credentials and cast your ballot.
+    </p>
+</div>
+
+<!-- Voter Credentials & Cryptographic Parameters -->
+<div class="grid-2">
+    <!-- Card 1: Voter Identity & HMAC Secret -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span>🔏</span> Voter HMAC Authentication Credentials
+            </h3>
+            <span class="brand-badge" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">Client-Side Secret</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+            This shared secret key is held by your browser and known to the Election Authority server. It generates the HMAC-SHA256 authentication tag when you submit your vote.
+        </p>
+
+        <div style="margin-bottom: 12px;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase;">Official Voter ID</div>
+            <div style="font-family: var(--font-mono); font-size: 1.1rem; color: #ffffff; font-weight: bold;" id="voterIdVal">
+                {{ user.voter_id }}
+            </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <div style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase;">Assigned HMAC-SHA256 Shared Secret (K)</div>
+            <div class="code-box" style="color: var(--accent-cyan); font-weight: bold; font-size: 1rem;" id="voterSecretVal">
+                {{ user.hmac_secret }}
+            </div>
+        </div>
+
+        <div>
+            <div style="font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Ballot Status</div>
+            {% if user.has_voted %}
+                <span class="key-badge key-public">✓ Ballot Cast & Cryptographically Recorded</span>
+            {% else %}
+                <span class="key-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-amber); color: #fbbf24;">
+                    ⏳ Ready to Vote (Not yet cast)
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Card 2: Election Authority RSA Public Key -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <span>🔑</span> Server RSA Public Key (e, n)
+            </h3>
+            <span class="key-badge key-public">Asymmetric Key</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+            Published publicly by the Election Authority. Every voter uses this key to encrypt their ballot candidate choice before transmission.
+        </p>
+
+        <div class="formula-card">
+            <div class="formula-title">Public Key Components (e, n)</div>
+            <div class="formula-content" style="font-size: 0.95rem;">
+                Public Exponent (e) = <strong>{{ pub_key.e }}</strong><br>
+                Modulus (n) = <strong>{{ pub_key.n }}</strong> ({{ pub_key.bit_length }} bits)
+            </div>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;">
+            <strong>Confidentiality Guarantee:</strong> Only the server possesses the matching private exponent <code>d</code> to compute <code>C<sup>d</sup> mod n</code>. Network eavesdroppers see only ciphertext.
+        </p>
+    </div>
+</div>
+
+<!-- Voting Action Section -->
+<div class="card" style="margin-top: 24px; text-align: center; padding: 36px 20px;">
+    {% if not user.has_voted %}
+        <h2 style="margin-bottom: 10px;">Ready to Cast Your Ballot?</h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 20px auto;">
+            Enter the secure voting booth. You will be able to inspect the real-time RSA encryption of your vote and the HMAC-SHA256 authentication tag generation, or simulate a network tampering attack.
+        </p>
+        <a href="{{ url_for('vote_booth') }}" class="btn btn-primary" style="font-size: 1.1rem; padding: 12px 28px;">
+            🗳️ Enter Secure Voting Booth Now →
+        </a>
+    {% else %}
+        <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+        <h2 style="color: #10b981; margin-bottom: 8px;">Your Vote Has Been Cast Securely!</h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 20px auto;">
+            Your ballot was authenticated via HMAC-SHA256, verified against tampering, decrypted by the election server, and recorded in the SQLite ledger under an anonymous voter hash.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 12px;">
+            <a href="{{ url_for('results_page') }}" class="btn btn-primary">View Election Results</a>
+            <a href="{{ url_for('security_analysis_page') }}" class="btn btn-secondary">Review Security Analysis</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
