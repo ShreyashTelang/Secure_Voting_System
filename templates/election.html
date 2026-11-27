@@ -14,25 +14,21 @@
     </div>
 
     <!-- Voter Status Pill -->
-    <div>
-      {% if not is_authenticated %}
-        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--bg-subtle);">
-          <span style="font-size: 0.88rem; color: var(--text-muted);">
-            Sign in to vote: <a href="{{ url_for('login') }}" style="font-weight: 600;">Sign In &rarr;</a>
-          </span>
-        </div>
-      {% elif voter_has_voted %}
-        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--status-success-bg); border-color: var(--status-success-border);">
-          <span class="status-pill success" style="margin-bottom: 4px;">✓ Ballot Recorded</span>
-          <div style="font-size: 0.82rem; color: #166534;">Your ballot is securely stored in the ledger.</div>
-        </div>
-      {% else %}
-        <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--accent-blue-subtle); border-color: #bfdbfe;">
-          <span class="status-pill neutral" style="margin-bottom: 4px;">Eligible to Vote</span>
-          <div style="font-size: 0.82rem; color: #1e40af;">Single-vote token active: {{ current_voter.voter_id }}</div>
-        </div>
-      {% endif %}
-    </div>
+    {% if is_authenticated %}
+      <div>
+        {% if voter_has_voted %}
+          <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--status-success-bg); border-color: var(--status-success-border);">
+            <span class="status-pill success" style="margin-bottom: 4px;">✓ Ballot Recorded</span>
+            <div style="font-size: 0.82rem; color: #166534;">Your ballot is securely stored in the ledger.</div>
+          </div>
+        {% else %}
+          <div class="card" style="padding: 12px 18px; margin-bottom: 0; background: var(--accent-blue-subtle); border-color: #bfdbfe;">
+            <span class="status-pill neutral" style="margin-bottom: 4px;">Eligible to Vote</span>
+            <div style="font-size: 0.82rem; color: #1e40af;">Single-vote token active: {{ current_voter.voter_id }}</div>
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </div>
 
